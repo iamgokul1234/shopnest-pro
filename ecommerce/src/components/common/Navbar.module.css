@@ -1,0 +1,217 @@
+/* Navbar.module.css — Styles for the global navigation component */
+
+* {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+body {
+  margin-left: 0;
+}
+
+/* ─── Fixed Top Navbar ───────────────────────────────────────────── */
+.reactContainer {
+  background-color: #0f1111;
+  display: flex;
+  align-items: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  padding: 20px;
+  width: 100%;
+  z-index: 1000;
+  box-shadow: 0 4px 6px rgba(224, 218, 218, 0.1);
+  transition: all 0.3s ease;
+  font-size: 20px;
+}
+
+/* ─── Desktop Nav Links Row ─────────────────────────────────────── */
+.navContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  gap: 20px;
+  width: 100%;
+  max-width: 1200px;
+  position: relative;
+}
+
+/* ─── Brand Logo ────────────────────────────────────────────────── */
+.react {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffff;
+  font-size: 20px;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+/* ─── Nav Link Items ────────────────────────────────────────────── */
+.navs {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: #ffff;
+  text-decoration: none;
+  position: relative;
+}
+
+/* Remove underlines from all links inside navbar */
+.navContainer a,
+.navContainer a span,
+.reactContainer a,
+.reactContainer a span {
+  text-decoration: none;
+}
+
+/* Animated underline on hover */
+.navs::after {
+  content: '';
+  width: 0%;
+  height: 3px;
+  background: rgb(254, 48, 48);
+  position: absolute;
+  left: 0;
+  bottom: -80%;
+  transition: 0.5s;
+}
+
+.navs:hover::after {
+  width: 100%;
+}
+
+/* ─── Search Bar ────────────────────────────────────────────────── */
+.searchContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  position: relative;
+}
+
+.inputBox {
+  width: 400px;
+  padding: 10px;
+  font-size: 16px;
+  border-radius: 20px;
+  border: none;
+  outline: none;
+}
+
+/* ─── Hamburger Menu Icon (Mobile Only) ─────────────────────────── */
+.menuIcon {
+  display: none;
+  cursor: pointer;
+  position: absolute;
+  right: 25px;
+  z-index: 1001;
+  color: white;
+}
+
+/* ─── Mobile Sidebar ────────────────────────────────────────────── */
+.sidebar {
+  position: fixed;
+  top: 60px;
+  right: -300px;      /* Hidden off-screen by default */
+  width: 250px;
+  height: 70%;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  transition: right 0.5s ease;   /* Slide animation */
+  z-index: 999;
+  backdrop-filter: blur(10px);
+  box-shadow: 0px 4px 6px rgba(255, 255, 255, 0.2);
+  background-color: #4b4b4b;
+  border-bottom-left-radius: 20px;
+}
+
+.sidebar a {
+  color: white;
+  text-decoration: none;
+  font-size: 18px;
+  padding-left: 30px;
+}
+
+.sidebar a:hover {
+  text-decoration: underline;
+}
+
+/* Applied when isSidebarOpen = true */
+.open {
+  right: 0 !important;
+}
+
+/* Close (X) button inside sidebar */
+.closeIcon {
+  display: flex;
+  justify-content: flex-start;
+  cursor: pointer;
+  margin-bottom: 20px;
+  color: white;
+}
+
+/* Search input inside sidebar */
+.sidebarSearchContainer {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.sidebarInput {
+  width: 100%;
+  padding: 10px 35px 10px 15px;
+  border-radius: 20px;
+  border: none;
+  outline: none;
+  font-size: 16px;
+  position: relative;
+}
+
+.sidebarSearchIcon {
+  position: absolute;
+  right: 30px;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ─── Responsive: Mobile (< 768px) ─────────────────────────────── */
+@media screen and (max-width: 768px) {
+  /* Hide desktop nav on mobile */
+  .navContainer {
+    display: none;
+  }
+
+  /* Show hamburger icon on mobile */
+  .menuIcon {
+    display: block;
+  }
+}
+
+/* ─── Responsive: Small Tablets (700px – 850px) ─────────────────── */
+@media screen and (max-width: 850px) and (min-width: 700px) {
+  .reactContainer {
+    padding: 20px;
+    font-size: 18px;
+  }
+
+  .navContainer {
+    flex-wrap: wrap;
+    gap: 15px;
+  }
+
+  .inputBox {
+    width: 300px;
+    font-size: 15px;
+  }
+
+  .navs {
+    font-size: 15px;
+  }
+}

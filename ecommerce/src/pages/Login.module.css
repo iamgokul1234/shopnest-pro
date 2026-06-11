@@ -1,0 +1,154 @@
+/* Login.module.css — Styles for the Login page (unchanged from original) */
+
+* {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.container {
+  position: relative;
+  width: 400px;
+  height: 450px;
+  background-color: #c1e2a7;
+  border-radius: 15px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+h2 {
+  font-size: 1.5em;
+  text-align: center;
+  margin: 25px auto;
+  color: #333;
+}
+
+.inputBox {
+  position: relative;
+  width: 310px;
+  margin: 0 auto;
+  border: none;
+}
+
+.inputBox input {
+  width: 100%;
+  padding: 10px 8px 8px 8px;
+  font-size: 1em;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.5);
+  outline: none;
+  background-color: transparent;
+  color: #3a3a3a;
+}
+
+.inputBox label {
+  position: absolute;
+  top: 50%;
+  left: 5px;
+  transform: translateY(-50%);
+  font-size: 1em;
+  pointer-events: none;
+  color: #333;
+  transition: 0.3s ease;
+}
+
+.inputBox input:focus ~ label,
+.inputBox input:valid ~ label {
+  top: -10px;
+  font-size: 0.9em;
+  color: #333;
+}
+
+p {
+  font-size: 16px;
+  color: rgb(17, 16, 16);
+}
+
+.buttonContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 25px;
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+/* ─── Glowing Animated Button ───────────────────────────────────── */
+.inputButton {
+  padding: 15px 40px;
+  border: none;
+  outline: none;
+  color: #fff;
+  cursor: pointer;
+  position: relative;
+  z-index: 0;
+  border-radius: 12px;
+  background: #161616;
+  overflow: hidden;
+}
+
+.inputButton::after {
+  content: '';
+  z-index: -1;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-color: #333;
+  left: 0;
+  top: 0;
+  border-radius: 10px;
+}
+
+.inputButton::before {
+  content: '';
+  background: linear-gradient(45deg, #ed0606, #e56700, #f4f000, #00ff3c, #00ffee, #ff00ff, #ff0000);
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  background-size: 600%;
+  z-index: -1;
+  width: calc(100% + 4px);
+  height: calc(100% + 4px);
+  filter: blur(8px);
+  animation: glowing 20s linear infinite;
+  transition: opacity 0.3s ease-in-out;
+  border-radius: 10px;
+  opacity: 1;
+}
+
+@keyframes glowing {
+  0%   { background-position: 0 0; }
+  50%  { background-position: 400% 0; }
+  100% { background-position: 0 0; }
+}
+
+.inputButton:hover::before { opacity: 1; }
+.inputButton:hover::after  { background: transparent; }
+.inputButton:hover         { color: #000; font-weight: bold; }
+
+/* ─── Responsive ────────────────────────────────────────────────── */
+@media screen and (max-width: 400px) {
+  .container  { width: 90%; height: auto; padding: 20px 10px; }
+  .inputBox   { width: 90%; }
+  .inputButton { padding: 12px 25px; font-size: 0.9em; }
+  h2          { font-size: 1.3em; }
+  p           { font-size: 14px; text-align: center; }
+}
+
+@media screen and (max-width: 850px) and (min-width: 700px) {
+  .container  { width: 500px; height: auto; padding: 30px; }
+  .inputBox   { width: 90%; }
+  .inputButton { padding: 14px 35px; font-size: 1em; }
+  h2          { font-size: 1.6em; }
+  p           { font-size: 15px; text-align: center; }
+}

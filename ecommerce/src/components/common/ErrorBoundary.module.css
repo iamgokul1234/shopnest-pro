@@ -1,0 +1,63 @@
+/* ErrorBoundary.module.css — Styles for the error fallback UI */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  text-align: center;
+  padding: 20px;
+  background-color: #fff5f5;
+}
+
+.title {
+  font-size: 36px;
+  color: #c0392b;
+  margin-bottom: 16px;
+}
+
+.message {
+  font-size: 18px;
+  color: #555;
+  max-width: 400px;
+  margin-bottom: 32px;
+}
+
+.actions {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.button {
+  padding: 12px 28px;
+  background-color: #c0392b;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.button:hover {
+  background-color: #a93226;
+}
+
+.buttonSecondary {
+  padding: 12px 28px;
+  background-color: transparent;
+  color: #c0392b;
+  border: 2px solid #c0392b;
+  border-radius: 8px;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.buttonSecondary:hover {
+  background-color: #c0392b;
+  color: white;
+}

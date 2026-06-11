@@ -1,0 +1,137 @@
+/* Contact.module.css — Styles for the Contact page (preserved from original) */
+
+.contactSection {
+  width: 80%;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 40px;
+  position: relative;
+  margin: 0 auto;
+  padding-top: 80px;
+}
+
+.contactSection h1 {
+  position: absolute;
+  top: 10%;
+  left: 54%;
+  color: black;
+  font-size: 50px;
+}
+
+.socialBox {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.socialBox a {
+  color: black;
+  text-decoration: none;
+  font-size: 20px;
+  white-space: nowrap;
+  position: relative;
+}
+
+.socialBox .icon {
+  color: #727fde;
+  font-size: 30px;
+  margin-top: 10px;
+  position: absolute;
+  left: -40px;
+  top: -55%;
+}
+
+.contactBox p {
+  max-width: 400px;
+  margin-top: 30px;
+  margin-bottom: 5px;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.contactBox input {
+  padding: 10px 30px;
+  background-color: #fff;
+  width: 300px;
+  border: 1px solid black;
+  outline: none;
+  border-top-right-radius: 10px;
+  border-bottom-right-radius: 10px;
+}
+
+.contactBox button {
+  margin-top: 30px;
+  padding: 10px 15px;
+  border-radius: 10px;
+  border: none;
+  background-color: rgb(152, 82, 156);
+  color: white;
+  box-shadow: 0 0 5px black;
+  cursor: pointer;
+  transition: 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.contactBox button:hover {
+  box-shadow: 0 0 15px #333;
+  opacity: 0.7;
+}
+
+.mess {
+  width: 300px;
+  height: 100px;
+  background-color: #fff;
+  padding: 10px;
+  resize: vertical;
+  font-size: 16px;
+  border: 1px solid black;
+  border-top-right-radius: 10px;
+  border-bottom-right-radius: 10px;
+  outline: none;
+}
+
+/* ─── Responsive: Small phones (< 380px) ───────────────────────── */
+@media screen and (max-width: 380px) {
+  .contactSection {
+    flex-direction: column;
+    gap: 20px;
+    width: 100%;
+    height: auto;
+    padding: 80px 10px 20px;
+  }
+
+  .contactSection h1 {
+    position: static;
+    text-align: center;
+    font-size: 24px;
+  }
+
+  .socialBox   { align-items: center; gap: 20px; }
+  .socialBox a { font-size: 16px; }
+
+  .contactBox input,
+  .contactBox .mess { width: 100%; padding: 10px; border-radius: 10px; }
+  .contactBox       { width: 100%; align-items: center; }
+  .contactBox button { width: 100%; justify-content: center; }
+}
+
+/* ─── Responsive: Tablets (< 850px) ────────────────────────────── */
+@media screen and (max-width: 850px) {
+  .contactSection {
+    flex-direction: column;
+    height: auto;
+    padding: 80px 20px 40px;
+  }
+
+  .contactSection h1 { position: static; text-align: center; font-size: 28px; margin-bottom: 20px; }
+  .socialBox         { align-items: center; }
+  .contactBox        { width: 100%; align-items: center; }
+
+  .contactBox input,
+  .contactBox .mess  { width: 100%; padding: 12px; font-size: 16px; }
+  .contactBox button { width: 100%; justify-content: center; }
+}
