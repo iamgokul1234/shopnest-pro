@@ -7,17 +7,25 @@
  *  - Auth state is now controlled by App.jsx (single source of truth)
  */
 
-import { useEffect, useRef, useState } from 'react';
-import { BsCartCheckFill } from 'react-icons/bs';
-import { IoCloseSharp, IoLogoReact, IoCart } from 'react-icons/io5';
-import { MdMenu, MdOutlineAccountCircle, MdOutlineSearch } from 'react-icons/md';
-import { FaHome } from 'react-icons/fa';
-import { IoIosInformationCircleOutline, IoMdLogIn, IoMdLogOut } from 'react-icons/io';
-import { BiSolidPhoneCall } from 'react-icons/bi';
-import { Link, useNavigate } from 'react-router-dom';
-import Swal from 'sweetalert2';
-import { ROUTES } from '../../constants/routes';
-import styles from './Navbar.module.css';
+import { useEffect, useRef, useState } from "react";
+import { BsCartCheckFill } from "react-icons/bs";
+import { IoCloseSharp, IoLogoReact, IoCart } from "react-icons/io5";
+import {
+  MdMenu,
+  MdOutlineAccountCircle,
+  MdOutlineSearch,
+} from "react-icons/md";
+import { FaHome } from "react-icons/fa";
+import {
+  IoIosInformationCircleOutline,
+  IoMdLogIn,
+  IoMdLogOut,
+} from "react-icons/io";
+import { BiSolidPhoneCall } from "react-icons/bi";
+import { Link, useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
+import { ROUTES } from "../../constants/routes";
+import styles from "./Navbar.module.css";
 
 export default function Navbar({
   search,
@@ -38,20 +46,20 @@ export default function Navbar({
         setIsSidebarOpen(false);
       }
     }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   // ─── Logout Handler ────────────────────────────────────────────
   const handleLogout = () => {
     Swal.fire({
-      title: 'Logout?',
-      text: 'Are you sure you want to logout?',
-      icon: 'question',
+      title: "Logout?",
+      text: "Are you sure you want to logout?",
+      icon: "question",
       showCancelButton: true,
-      confirmButtonColor: '#333',
-      cancelButtonColor: '#d33',
-      confirmButtonText: 'Yes, logout',
+      confirmButtonColor: "#333",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, logout",
     }).then((result) => {
       if (result.isConfirmed) {
         // Call App.jsx logout handler
@@ -59,8 +67,8 @@ export default function Navbar({
         setIsSidebarOpen(false);
 
         Swal.fire({
-          icon: 'success',
-          title: 'Logged out',
+          icon: "success",
+          title: "Logged out",
           timer: 1000,
           showConfirmButton: false,
         }).then(() => {
@@ -74,11 +82,12 @@ export default function Navbar({
     <div>
       {/* ── Desktop Navigation Bar ──────────────────────────── */}
       <nav className={styles.reactContainer}>
-
         {/* Brand logo + name */}
         <Link to={ROUTES.HOME}>
           <span className={styles.react}>
-            <IoLogoReact style={{ fontSize: '30px', width: '50px', fontWeight: 'bold' }} />
+            <IoLogoReact
+              style={{ fontSize: "30px", width: "50px", fontWeight: "bold" }}
+            />
             <span>ShopNest Pro</span>
           </span>
         </Link>
@@ -106,16 +115,32 @@ export default function Navbar({
               onChange={(e) => setSearch(e.target.value)}
               className={styles.inputBox}
             />
-            <span style={{ position: 'absolute', right: '15px', padding: '5px', fontSize: '1.2em' }}>
+            <span
+              style={{
+                position: "absolute",
+                right: "15px",
+                padding: "5px",
+                fontSize: "1.2em",
+              }}
+            >
               <MdOutlineSearch />
             </span>
           </div>
 
           {/* Cart icon with item count badge */}
           <Link to={ROUTES.CART}>
-            <span style={{ color: '#ffff', fontSize: '18px', marginLeft: '10px', position: 'relative', padding: '10px', borderRadius: '2px' }}>
+            <span
+              style={{
+                color: "#ffff",
+                fontSize: "18px",
+                marginLeft: "10px",
+                position: "relative",
+                padding: "10px",
+                borderRadius: "2px",
+              }}
+            >
               <BsCartCheckFill />
-              <span style={{ position: 'absolute', top: '0', right: '0' }}>
+              <span style={{ position: "absolute", top: "0", right: "0" }}>
                 {cart?.length || 0}
               </span>
             </span>
@@ -123,25 +148,31 @@ export default function Navbar({
 
           {/* Auth section — shows based on isLoggedIn prop */}
           {isLoggedIn ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span className={styles.navs} style={{ cursor: 'default' }}>
-                <MdOutlineAccountCircle style={{ fontSize: '20px' }} />
-                {' '}{currentUser?.name}
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              {/* Show Admin link only for admin users */}
+              {currentUser?.role === "admin" && (
+                <Link to={ROUTES.ADMIN}>
+                  <span className={styles.navs}>Admin</span>
+                </Link>
+              )}
+
+              <span className={styles.navs} style={{ cursor: "default" }}>
+                <MdOutlineAccountCircle style={{ fontSize: "20px" }} />{" "}
+                {currentUser?.name}
               </span>
+
               <span
                 className={styles.navs}
                 onClick={handleLogout}
-                style={{ cursor: 'pointer' }}
+                style={{ cursor: "pointer" }}
               >
-                <IoMdLogOut style={{ fontSize: '20px' }} />
-                {' '}Logout
+                <IoMdLogOut style={{ fontSize: "20px" }} /> Logout
               </span>
             </div>
           ) : (
             <Link to={ROUTES.LOGIN}>
               <span className={styles.navs}>
-                <MdOutlineAccountCircle style={{ fontSize: '20px' }} />
-                {' '}Login
+                <MdOutlineAccountCircle style={{ fontSize: "20px" }} /> Login
               </span>
             </Link>
           )}
@@ -155,10 +186,13 @@ export default function Navbar({
 
       {/* ── Mobile Sidebar ──────────────────────────────────── */}
       <div
-        className={`${styles.sidebar} ${isSidebarOpen ? styles.open : ''}`}
+        className={`${styles.sidebar} ${isSidebarOpen ? styles.open : ""}`}
         ref={sidebarRef}
       >
-        <div className={styles.closeIcon} onClick={() => setIsSidebarOpen(false)}>
+        <div
+          className={styles.closeIcon}
+          onClick={() => setIsSidebarOpen(false)}
+        >
           <IoCloseSharp size={24} />
         </div>
 
@@ -190,10 +224,7 @@ export default function Navbar({
 
         {/* Auth section in sidebar */}
         {isLoggedIn ? (
-          <span
-            onClick={handleLogout}
-            style={{ cursor: 'pointer' }}
-          >
+          <span onClick={handleLogout} style={{ cursor: "pointer" }}>
             <IoMdLogOut /> Logout ({currentUser?.name})
           </span>
         ) : (
