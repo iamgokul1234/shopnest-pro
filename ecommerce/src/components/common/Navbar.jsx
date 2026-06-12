@@ -1,20 +1,10 @@
 /**
  * Navbar.jsx — Global Navigation Component
  *
- * RESPONSIBILITY:
- *  Renders the top navigation bar and mobile sidebar.
- *  Handles: logo, nav links, search input, cart badge, account link.
- *
- * PROPS:
- *  - search     {string}   Current search query (controlled from App)
- *  - setSearch  {function} Updates the search state in App
- *  - cart       {array}    Cart items array (used to show item count)
- *
- * FEATURES:
- *  - Fixed top navbar for desktop
- *  - Hamburger menu + slide-in sidebar for mobile
- *  - Closes sidebar when clicking outside (useRef + useEffect)
- *  - Real-time cart item count badge
+ * PHASE 3 UPDATE:
+ *  - Receives isLoggedIn, currentUser, onLogout as props from App.jsx
+ *  - No longer reads localStorage directly
+ *  - Auth state is now controlled by App.jsx (single source of truth)
  */
 
 import { useEffect, useRef, useState } from 'react';
@@ -22,39 +12,67 @@ import { BsCartCheckFill } from 'react-icons/bs';
 import { IoCloseSharp, IoLogoReact, IoCart } from 'react-icons/io5';
 import { MdMenu, MdOutlineAccountCircle, MdOutlineSearch } from 'react-icons/md';
 import { FaHome } from 'react-icons/fa';
-import { IoIosInformationCircleOutline, IoMdLogIn } from 'react-icons/io';
+import { IoIosInformationCircleOutline, IoMdLogIn, IoMdLogOut } from 'react-icons/io';
 import { BiSolidPhoneCall } from 'react-icons/bi';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import Swal from 'sweetalert2';
 import { ROUTES } from '../../constants/routes';
 import styles from './Navbar.module.css';
 
-export default function Navbar({ search, setSearch, cart }) {
+export default function Navbar({
+  search,
+  setSearch,
+  cart,
+  isLoggedIn,
+  currentUser,
+  onLogout,
+}) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-  // useRef gives us a direct reference to the sidebar DOM element
-  // so we can check if a click happened inside or outside it
   const sidebarRef = useRef();
+  const navigate = useNavigate();
 
-  // ─── Close sidebar when user clicks outside it ──────────────────
+  // ─── Close sidebar when clicking outside ──────────────────────
   useEffect(() => {
     function handleClickOutside(event) {
-      // If the sidebar exists AND the click was NOT inside it → close
       if (sidebarRef.current && !sidebarRef.current.contains(event.target)) {
         setIsSidebarOpen(false);
       }
     }
-
-    // Attach event listener when component mounts
     document.addEventListener('mousedown', handleClickOutside);
-
-    // Cleanup: remove listener when component unmounts
-    // This prevents memory leaks
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []); // Empty array = run once on mount only
+  }, []);
+
+  // ─── Logout Handler ────────────────────────────────────────────
+  const handleLogout = () => {
+    Swal.fire({
+      title: 'Logout?',
+      text: 'Are you sure you want to logout?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#333',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, logout',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // Call App.jsx logout handler
+        onLogout();
+        setIsSidebarOpen(false);
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Logged out',
+          timer: 1000,
+          showConfirmButton: false,
+        }).then(() => {
+          navigate(ROUTES.LOGIN);
+        });
+      }
+    });
+  };
 
   return (
     <div>
-      {/* ── Desktop Navigation Bar ─────────────────────────────── */}
+      {/* ── Desktop Navigation Bar ──────────────────────────── */}
       <nav className={styles.reactContainer}>
 
         {/* Brand logo + name */}
@@ -79,7 +97,7 @@ export default function Navbar({ search, setSearch, cart }) {
             <span className={styles.navs}>Contact</span>
           </Link>
 
-          {/* Search bar — controlled input synced to App state */}
+          {/* Search bar */}
           <div className={styles.searchContainer}>
             <input
               type="text"
@@ -97,39 +115,53 @@ export default function Navbar({ search, setSearch, cart }) {
           <Link to={ROUTES.CART}>
             <span style={{ color: '#ffff', fontSize: '18px', marginLeft: '10px', position: 'relative', padding: '10px', borderRadius: '2px' }}>
               <BsCartCheckFill />
-              {/* Badge: shows number of items in cart */}
               <span style={{ position: 'absolute', top: '0', right: '0' }}>
                 {cart?.length || 0}
               </span>
             </span>
           </Link>
 
-          {/* Account / Login icon */}
-          <Link to={ROUTES.LOGIN}>
-            <span className={styles.navs}>
-              <MdOutlineAccountCircle style={{ fontSize: '20px' }} />
-            </span>
-          </Link>
+          {/* Auth section — shows based on isLoggedIn prop */}
+          {isLoggedIn ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span className={styles.navs} style={{ cursor: 'default' }}>
+                <MdOutlineAccountCircle style={{ fontSize: '20px' }} />
+                {' '}{currentUser?.name}
+              </span>
+              <span
+                className={styles.navs}
+                onClick={handleLogout}
+                style={{ cursor: 'pointer' }}
+              >
+                <IoMdLogOut style={{ fontSize: '20px' }} />
+                {' '}Logout
+              </span>
+            </div>
+          ) : (
+            <Link to={ROUTES.LOGIN}>
+              <span className={styles.navs}>
+                <MdOutlineAccountCircle style={{ fontSize: '20px' }} />
+                {' '}Login
+              </span>
+            </Link>
+          )}
         </div>
 
-        {/* Hamburger menu icon — visible only on mobile */}
+        {/* Hamburger menu icon */}
         <div className={styles.menuIcon} onClick={() => setIsSidebarOpen(true)}>
           <MdMenu size={24} />
         </div>
       </nav>
 
-      {/* ── Mobile Sidebar ─────────────────────────────────────── */}
-      {/* Conditionally applies the "open" class to slide it in */}
+      {/* ── Mobile Sidebar ──────────────────────────────────── */}
       <div
         className={`${styles.sidebar} ${isSidebarOpen ? styles.open : ''}`}
         ref={sidebarRef}
       >
-        {/* Close button */}
         <div className={styles.closeIcon} onClick={() => setIsSidebarOpen(false)}>
           <IoCloseSharp size={24} />
         </div>
 
-        {/* Search input inside sidebar */}
         <div className={styles.sidebarSearchContainer}>
           <input
             type="text"
@@ -143,7 +175,6 @@ export default function Navbar({ search, setSearch, cart }) {
           </span>
         </div>
 
-        {/* Sidebar nav links — each closes the sidebar on click */}
         <Link to={ROUTES.HOME} onClick={() => setIsSidebarOpen(false)}>
           <FaHome /> Home
         </Link>
@@ -156,9 +187,20 @@ export default function Navbar({ search, setSearch, cart }) {
         <Link to={ROUTES.CART} onClick={() => setIsSidebarOpen(false)}>
           <IoCart /> Cart ({cart?.length || 0})
         </Link>
-        <Link to={ROUTES.LOGIN} onClick={() => setIsSidebarOpen(false)}>
-          <IoMdLogIn /> Login
-        </Link>
+
+        {/* Auth section in sidebar */}
+        {isLoggedIn ? (
+          <span
+            onClick={handleLogout}
+            style={{ cursor: 'pointer' }}
+          >
+            <IoMdLogOut /> Logout ({currentUser?.name})
+          </span>
+        ) : (
+          <Link to={ROUTES.LOGIN} onClick={() => setIsSidebarOpen(false)}>
+            <IoMdLogIn /> Login
+          </Link>
+        )}
       </div>
     </div>
   );

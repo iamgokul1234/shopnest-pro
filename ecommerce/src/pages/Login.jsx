@@ -1,56 +1,45 @@
 /**
  * Login.jsx — User Login Page
  *
- * RESPONSIBILITY:
- *  Handles user login using credentials stored in localStorage.
- *
- * CURRENT IMPLEMENTATION (Phase 1):
- *  - Reads user from localStorage (set during Register)
- *  - Compares email + password directly
- *  - Redirects to home on success
- *
- * PHASE 3 UPGRADE:
- *  - Will call POST /api/auth/login on our Express backend
- *  - Backend will validate credentials against MongoDB
- *  - Backend will return a JWT token
- *  - Token stored in localStorage, used in Axios interceptor
- *
- * SECURITY NOTE:
- *  The current localStorage approach stores plain text passwords.
- *  This is a TEMPORARY pattern for development only.
- *  Phase 3 will replace this entirely with JWT + bcrypt.
+ * PHASE 3 UPDATE:
+ *  - Calls onLogin prop after successful login
+ *  - onLogin updates App.jsx auth state immediately
+ *  - Navbar updates instantly without page refresh
  */
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
+import api from '../services/api';
 import { ROUTES } from '../constants/routes';
 import styles from './Login.module.css';
 
-export default function Login() {
+export default function Login({ onLogin }) {
   const [form, setForm] = useState({
     email: '',
     password: '',
   });
-
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // ─── Controlled Input Handler ────────────────────────────────────
-  // Single handler for all inputs using [name] dynamic key
+  // ─── Controlled Input Handler ──────────────────────────────────
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm({ ...form, [name]: value });
   };
 
-  // ─── Form Submission ─────────────────────────────────────────────
-  const handleSubmit = (e) => {
-    e.preventDefault(); // Prevent default HTML form page refresh
+  // ─── Form Submission ───────────────────────────────────────────
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
 
-    // Read the user object saved during registration
-    const user = JSON.parse(localStorage.getItem('user'));
+    try {
+      const response = await api.post('/auth/login', form);
+      const { token, user } = response.data;
 
-    if (user && user.email === form.email && user.password === form.password) {
-      // Login success — will be replaced with JWT in Phase 3
+      // Call App.jsx handler — updates Navbar immediately
+      onLogin(token, user);
+
       Swal.fire({
         icon: 'success',
         title: 'Welcome back!',
@@ -60,14 +49,19 @@ export default function Login() {
       }).then(() => {
         navigate(ROUTES.HOME);
       });
-    } else {
-      // Login failure — replaced browser alert() with SweetAlert2
+
+    } catch (error) {
+      const message =
+        error.response?.data?.message || 'Login failed. Try again.';
+
       Swal.fire({
         icon: 'error',
         title: 'Login Failed',
-        text: 'Invalid email or password. Please try again.',
+        text: message,
         confirmButtonColor: '#333',
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -106,13 +100,16 @@ export default function Login() {
 
         {/* Submit Button */}
         <div className={styles.buttonContainer}>
-          <button className={styles.inputButton} type="submit">
-            Login
+          <button
+            className={styles.inputButton}
+            type="submit"
+            disabled={loading}
+          >
+            {loading ? 'Logging in...' : 'Login'}
           </button>
         </div>
       </form>
 
-      {/* Link to Register */}
       <p>
         Don't have an account?{' '}
         <span

@@ -1,61 +1,76 @@
 /**
  * Register.jsx — User Registration Page
  *
- * RESPONSIBILITY:
- *  Collects name, email, and password from the user.
- *  Saves to localStorage and redirects to Login.
- *
- * PHASE 3 UPGRADE:
- *  Will call POST /api/auth/register on the Express backend.
- *  Password will be hashed with bcrypt before saving to MongoDB.
- *  The plain localStorage approach will be completely removed.
+ * PHASE 3 UPDATE:
+ *  - Calls onLogin prop after successful registration
+ *  - User is automatically logged in after registering
+ *  - No more localStorage plain text password storage
  */
 
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { CiLock, CiMail, CiUser } from 'react-icons/ci';
+import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
+import api from '../services/api';
 import { ROUTES } from '../constants/routes';
 import styles from './Register.module.css';
 
-export default function Register() {
+export default function Register({ onLogin }) {
   const [form, setForm] = useState({
     name: '',
     email: '',
     password: '',
   });
-
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // ─── Controlled Input Handler ────────────────────────────────────
+  // ─── Controlled Input Handler ──────────────────────────────────
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm({ ...form, [name]: value });
   };
 
-  // ─── Form Submission ─────────────────────────────────────────────
-  const handleSubmit = (e) => {
+  // ─── Form Submission ───────────────────────────────────────────
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
 
-    // Temporarily saving to localStorage (Phase 3 replaces this)
-    // WARNING: Never store passwords in plain text in production
-    localStorage.setItem('user', JSON.stringify(form));
+    try {
+      const response = await api.post('/auth/register', form);
+      const { token, user } = response.data;
 
-    // Success notification using SweetAlert2
-    Swal.fire({
-      icon: 'success',
-      title: 'Registered!',
-      text: 'Your account has been created. Please log in.',
-      timer: 1800,
-      showConfirmButton: false,
-    }).then(() => {
-      navigate(ROUTES.LOGIN);
-    });
+      // Call App.jsx handler — updates Navbar immediately
+      // User is automatically logged in after registering
+      onLogin(token, user);
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Account Created!',
+        text: `Welcome to ShopNest Pro, ${user.name}!`,
+        timer: 1800,
+        showConfirmButton: false,
+      }).then(() => {
+        navigate(ROUTES.HOME);
+      });
+
+    } catch (error) {
+      const message =
+        error.response?.data?.message || 'Registration failed. Try again.';
+
+      Swal.fire({
+        icon: 'error',
+        title: 'Registration Failed',
+        text: message,
+        confirmButtonColor: '#333',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className={styles.container}>
-      <h2 className={styles.heading}>Register Form</h2>
+      <h2 className={styles.heading}>Create Account</h2>
 
       <form onSubmit={handleSubmit}>
         {/* Name Input */}
@@ -69,6 +84,7 @@ export default function Register() {
             value={form.name}
             onChange={handleChange}
             required
+            minLength={2}
           />
           <label htmlFor="register-name">Username</label>
         </div>
@@ -97,17 +113,32 @@ export default function Register() {
             value={form.password}
             onChange={handleChange}
             required
+            minLength={6}
           />
           <label htmlFor="register-password">Password</label>
         </div>
 
         {/* Submit Button */}
         <div className={styles.buttonContainer}>
-          <button className={styles.inputButton} type="submit">
-            Register
+          <button
+            className={styles.inputButton}
+            type="submit"
+            disabled={loading}
+          >
+            {loading ? 'Creating Account...' : 'Register'}
           </button>
         </div>
       </form>
+
+      <p>
+        Already have an account?{' '}
+        <span
+          style={{ color: 'blue', cursor: 'pointer' }}
+          onClick={() => navigate(ROUTES.LOGIN)}
+        >
+          Login
+        </span>
+      </p>
     </div>
   );
 }

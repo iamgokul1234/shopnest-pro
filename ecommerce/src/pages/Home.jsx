@@ -16,13 +16,13 @@
  *  Phase 2: Our own Express backend
  */
 
-import { useEffect, useState } from 'react';
-import Swal from 'sweetalert2';
-import ProductCard from '../components/product/ProductCard';
-import api from '../services/api';
-import styles from './Home.module.css';
+import { useEffect, useState } from "react";
+import Swal from "sweetalert2";
+import ProductCard from "../components/product/ProductCard";
+import { dummyApi } from "../services/api";
+import styles from "./Home.module.css";
 
-export default function Home({ search = '', cart = [], setCart = () => {} }) {
+export default function Home({ search = "", cart = [], setCart = () => {} }) {
   // Stores the full list of products fetched from the API
   const [products, setProducts] = useState([]);
 
@@ -41,13 +41,11 @@ export default function Home({ search = '', cart = [], setCart = () => {} }) {
 
         // api.get() uses our Axios instance (baseURL + timeout already set)
         // This replaces the old: fetch('https://dummyjson.com/products')
-        const response = await api.get('/products');
-
-        // Axios automatically parses JSON — no need for .json()
+        const response = await dummyApi.get("/products");
         setProducts(response.data.products);
       } catch (err) {
         // Axios throws for ALL non-2xx responses (unlike fetch which doesn't)
-        setError('Failed to load products. Please try again.');
+        setError("Failed to load products. Please try again.");
       } finally {
         // Always stop loading, whether success or error
         setLoading(false);
@@ -65,10 +63,10 @@ export default function Home({ search = '', cart = [], setCart = () => {} }) {
     if (alreadyInCart) {
       // Replace old browser alert() with professional SweetAlert2 popup
       Swal.fire({
-        icon: 'info',
-        title: 'Already in Cart',
+        icon: "info",
+        title: "Already in Cart",
         text: `"${item.title}" is already in your cart.`,
-        confirmButtonColor: '#ffce12',
+        confirmButtonColor: "#ffce12",
       });
       return;
     }
@@ -78,10 +76,10 @@ export default function Home({ search = '', cart = [], setCart = () => {} }) {
 
     // Show success confirmation
     Swal.fire({
-      icon: 'success',
-      title: 'Added to Cart!',
+      icon: "success",
+      title: "Added to Cart!",
       text: `"${item.title}" has been added.`,
-      timer: 1500,           // Auto-closes after 1.5 seconds
+      timer: 1500, // Auto-closes after 1.5 seconds
       showConfirmButton: false,
     });
   };
@@ -89,7 +87,7 @@ export default function Home({ search = '', cart = [], setCart = () => {} }) {
   // ─── Filter Products By Search Query ────────────────────────────
   // Runs every render — filters the fetched list without another API call
   const filteredProducts = products.filter((p) =>
-    p.title.toLowerCase().includes(search.toLowerCase())
+    p.title.toLowerCase().includes(search.toLowerCase()),
   );
 
   // ─── Render States ───────────────────────────────────────────────
@@ -97,7 +95,9 @@ export default function Home({ search = '', cart = [], setCart = () => {} }) {
   // Show loading state while fetching
   if (loading) {
     return (
-      <div style={{ textAlign: 'center', marginTop: '100px', fontSize: '20px' }}>
+      <div
+        style={{ textAlign: "center", marginTop: "100px", fontSize: "20px" }}
+      >
         Loading products...
       </div>
     );
@@ -106,7 +106,14 @@ export default function Home({ search = '', cart = [], setCart = () => {} }) {
   // Show error state if fetch failed
   if (error) {
     return (
-      <div style={{ textAlign: 'center', marginTop: '100px', color: 'red', fontSize: '20px' }}>
+      <div
+        style={{
+          textAlign: "center",
+          marginTop: "100px",
+          color: "red",
+          fontSize: "20px",
+        }}
+      >
         {error}
       </div>
     );
@@ -115,7 +122,9 @@ export default function Home({ search = '', cart = [], setCart = () => {} }) {
   // Show empty state if search returns no results
   if (filteredProducts.length === 0) {
     return (
-      <div style={{ textAlign: 'center', marginTop: '100px', fontSize: '20px' }}>
+      <div
+        style={{ textAlign: "center", marginTop: "100px", fontSize: "20px" }}
+      >
         No products found for "{search}"
       </div>
     );
