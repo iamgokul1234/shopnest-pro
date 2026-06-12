@@ -1,35 +1,20 @@
 /**
  * Home.jsx — Product Listing Page
  *
- * RESPONSIBILITY:
- *  Fetches all products from the API and displays them in a grid.
- *  Handles search filtering, loading state, and add-to-cart logic.
- *
- * DATA FLOW:
- *  App.jsx (owns state)
- *    → passes search, cart, setCart as props
- *    → Home filters and displays products
- *    → HomeCard triggers setCart via onAction prop
- *
- * API:
- *  Phase 1: DummyJSON (external mock API)
- *  Phase 2: Our own Express backend
+ * PHASE 4 UPDATE:
+ *  - Add to cart now calls POST /api/cart
+ *  - Cart state synced with MongoDB
  */
 
-import { useEffect, useState } from "react";
-import Swal from "sweetalert2";
-import ProductCard from "../components/product/ProductCard";
-import { dummyApi } from "../services/api";
-import styles from "./Home.module.css";
+import { useEffect, useState } from 'react';
+import Swal from 'sweetalert2';
+import ProductCard from '../components/product/ProductCard';
+import api, { dummyApi } from '../services/api';
+import styles from './Home.module.css';
 
-export default function Home({ search = "", cart = [], setCart = () => {} }) {
-  // Stores the full list of products fetched from the API
+export default function Home({ search = '', cart = [], setCart = () => {} }) {
   const [products, setProducts] = useState([]);
-
-  // Tracks loading state to show a spinner while fetching
   const [loading, setLoading] = useState(true);
-
-  // Tracks any error that occurred during the API call
   const [error, setError] = useState(null);
 
   // ─── Fetch Products On Mount ─────────────────────────────────────
@@ -38,93 +23,99 @@ export default function Home({ search = "", cart = [], setCart = () => {} }) {
       try {
         setLoading(true);
         setError(null);
-
-        // api.get() uses our Axios instance (baseURL + timeout already set)
-        // This replaces the old: fetch('https://dummyjson.com/products')
-        const response = await dummyApi.get("/products");
+        const response = await dummyApi.get('/products');
         setProducts(response.data.products);
       } catch (err) {
-        // Axios throws for ALL non-2xx responses (unlike fetch which doesn't)
-        setError("Failed to load products. Please try again.");
+        setError('Failed to load products. Please try again.');
       } finally {
-        // Always stop loading, whether success or error
         setLoading(false);
       }
     };
 
     fetchProducts();
-  }, []); // Empty array = run once when component mounts
+  }, []);
 
   // ─── Add To Cart ─────────────────────────────────────────────────
-  const handleAddToCart = (item) => {
-    // Check if product is already in cart using .find()
-    const alreadyInCart = cart.find((p) => p.id === item.id);
-
-    if (alreadyInCart) {
-      // Replace old browser alert() with professional SweetAlert2 popup
+  const handleAddToCart = async (item) => {
+    // Check if user is logged in
+    const token = localStorage.getItem('token');
+    if (!token) {
       Swal.fire({
-        icon: "info",
-        title: "Already in Cart",
-        text: `"${item.title}" is already in your cart.`,
-        confirmButtonColor: "#ffce12",
+        icon: 'warning',
+        title: 'Login Required',
+        text: 'Please login to add items to your cart.',
+        confirmButtonColor: '#333',
       });
       return;
     }
 
-    // Add the full product object to the cart array
-    setCart([...cart, item]);
+    // Check if product is already in cart
+    const alreadyInCart = cart.find((p) => p.productId === item.id);
 
-    // Show success confirmation
-    Swal.fire({
-      icon: "success",
-      title: "Added to Cart!",
-      text: `"${item.title}" has been added.`,
-      timer: 1500, // Auto-closes after 1.5 seconds
-      showConfirmButton: false,
-    });
+    try {
+      // Call our backend API to add item
+      const response = await api.post('/cart', {
+        productId: item.id,
+        title: item.title,
+        price: item.price,
+        thumbnail: item.thumbnail,
+      });
+
+      // Update cart state with response from API
+      setCart(response.data.items);
+
+      if (alreadyInCart) {
+        Swal.fire({
+          icon: 'info',
+          title: 'Quantity Updated',
+          text: `"${item.title}" quantity increased.`,
+          timer: 1500,
+          showConfirmButton: false,
+        });
+      } else {
+        Swal.fire({
+          icon: 'success',
+          title: 'Added to Cart!',
+          text: `"${item.title}" has been added.`,
+          timer: 1500,
+          showConfirmButton: false,
+        });
+      }
+    } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Failed to add item',
+        text: error.response?.data?.message || 'Please try again.',
+        confirmButtonColor: '#333',
+      });
+    }
   };
 
-  // ─── Filter Products By Search Query ────────────────────────────
-  // Runs every render — filters the fetched list without another API call
+  // ─── Filter Products By Search ───────────────────────────────────
   const filteredProducts = products.filter((p) =>
-    p.title.toLowerCase().includes(search.toLowerCase()),
+    p.title.toLowerCase().includes(search.toLowerCase())
   );
 
   // ─── Render States ───────────────────────────────────────────────
-
-  // Show loading state while fetching
   if (loading) {
     return (
-      <div
-        style={{ textAlign: "center", marginTop: "100px", fontSize: "20px" }}
-      >
+      <div style={{ textAlign: 'center', marginTop: '100px', fontSize: '20px' }}>
         Loading products...
       </div>
     );
   }
 
-  // Show error state if fetch failed
   if (error) {
     return (
-      <div
-        style={{
-          textAlign: "center",
-          marginTop: "100px",
-          color: "red",
-          fontSize: "20px",
-        }}
-      >
+      <div style={{ textAlign: 'center', marginTop: '100px', color: 'red', fontSize: '20px' }}>
         {error}
       </div>
     );
   }
 
-  // Show empty state if search returns no results
   if (filteredProducts.length === 0) {
     return (
-      <div
-        style={{ textAlign: "center", marginTop: "100px", fontSize: "20px" }}
-      >
+      <div style={{ textAlign: 'center', marginTop: '100px', fontSize: '20px' }}>
         No products found for "{search}"
       </div>
     );

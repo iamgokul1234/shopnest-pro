@@ -37,12 +37,160 @@
 /* ─── Cart Items Grid ───────────────────────────────────────────── */
 .cartGrid {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* ─── Single Cart Item ──────────────────────────────────────────── */
+.cartItem {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  text-align: left;
+}
+
+/* ─── Product Image ─────────────────────────────────────────────── */
+.cartImage {
+  width: 90px;
+  height: 90px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #f5f5f5;
+  flex-shrink: 0;
+}
+
+/* ─── Product Details ───────────────────────────────────────────── */
+.cartDetails {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cartTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #222;
+  margin: 0;
+}
+
+.cartPrice {
+  font-size: 14px;
+  color: #555;
+  margin: 0;
+}
+
+/* ─── Quantity Controls ─────────────────────────────────────────── */
+.quantityControls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.quantityBtn {
+  width: 30px;
+  height: 30px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: #f5f5f5;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
   justify-content: center;
+  font-size: 12px;
+  transition: background 0.2s;
+}
+
+.quantityBtn:hover:not(:disabled) {
+  background: #e0e0e0;
+}
+
+.quantityBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.quantity {
+  font-size: 16px;
+  font-weight: 600;
+  min-width: 24px;
+  text-align: center;
+}
+
+/* ─── Remove Button ─────────────────────────────────────────────── */
+.removeBtn {
+  background: #fff0f0;
+  border: 1px solid #ffcccc;
+  color: #e53935;
+  border-radius: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.removeBtn:hover:not(:disabled) {
+  background: #ffe0e0;
+}
+
+.removeBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ─── Cart Summary ──────────────────────────────────────────────── */
+.cartSummary {
+  max-width: 800px;
+  margin: 24px auto 0;
+  padding: 20px;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.totalPrice {
+  font-size: 22px;
+  font-weight: 700;
+  color: #222;
+  margin: 0;
+}
+
+/* ─── Clear Cart Button ─────────────────────────────────────────── */
+.clearBtn {
+  background: #d33;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.clearBtn:hover:not(:disabled) {
+  background: #b71c1c;
+}
+
+.clearBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 /* ─── Responsive ────────────────────────────────────────────────── */
-@media screen and (max-width: 400px) {
+@media screen and (max-width: 600px) {
   .heading {
     font-size: 30px;
   }
@@ -53,5 +201,20 @@
 
   .emptyImage {
     width: 200px;
+  }
+
+  .cartItem {
+    flex-wrap: wrap;
+  }
+
+  .cartImage {
+    width: 70px;
+    height: 70px;
+  }
+
+  .cartSummary {
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
   }
 }

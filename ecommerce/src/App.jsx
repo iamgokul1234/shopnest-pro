@@ -1,21 +1,20 @@
 /**
  * App.jsx — Root Application Component
  *
- * PHASE 3 UPDATE:
- *  - Now owns auth state (isLoggedIn, currentUser)
- *  - Passes auth state and handlers down to Navbar and Routes
- *  - When login/logout happens anywhere, Navbar updates immediately
+ * PHASE 4 UPDATE:
+ *  - Loads cart from API on mount when user is logged in
+ *  - Cart state is now synced with MongoDB
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import Navbar from './components/common/Navbar';
 import AppRoutes from './routes/AppRoutes';
 import ErrorBoundary from './components/common/ErrorBoundary';
+import api from './services/api';
 
 function App() {
   // ─── Auth State ──────────────────────────────────────────────────
-  // Owned here so Navbar and Pages share the same source of truth
   const [isLoggedIn, setIsLoggedIn] = useState(
     !!localStorage.getItem('token')
   );
@@ -24,7 +23,6 @@ function App() {
   );
 
   // ─── Auth Handlers ───────────────────────────────────────────────
-  // Called by Login.jsx and Register.jsx after successful auth
   const handleLogin = (token, user) => {
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(user));
@@ -32,12 +30,13 @@ function App() {
     setCurrentUser(user);
   };
 
-  // Called by Navbar logout button
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setIsLoggedIn(false);
     setCurrentUser(null);
+    // Clear cart on logout
+    setCart([]);
   };
 
   // ─── Search State ────────────────────────────────────────────────
@@ -46,10 +45,28 @@ function App() {
   // ─── Cart State ──────────────────────────────────────────────────
   const [cart, setCart] = useState([]);
 
+  // ─── Load Cart From API On Mount ─────────────────────────────────
+  // When user is logged in, fetch their cart from MongoDB
+  useEffect(() => {
+    const loadCart = async () => {
+      // Only fetch cart if user is logged in
+      if (!localStorage.getItem('token')) return;
+
+      try {
+        const response = await api.get('/cart');
+        setCart(response.data.items);
+      } catch (error) {
+        // If cart fetch fails, just start with empty cart
+        console.error('Failed to load cart:', error.message);
+      }
+    };
+
+    loadCart();
+  }, [isLoggedIn]); // Re-run when login state changes
+
   return (
     <ErrorBoundary>
       <BrowserRouter>
-        {/* Navbar receives auth state and logout handler */}
         <Navbar
           search={search}
           setSearch={setSearch}
@@ -58,8 +75,6 @@ function App() {
           currentUser={currentUser}
           onLogout={handleLogout}
         />
-
-        {/* Routes receive login handler to call after successful auth */}
         <AppRoutes
           search={search}
           cart={cart}

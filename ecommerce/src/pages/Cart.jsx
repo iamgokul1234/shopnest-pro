@@ -1,30 +1,114 @@
 /**
  * Cart.jsx — Shopping Cart Page
  *
- * RESPONSIBILITY:
- *  Displays all products the user has added to their cart.
- *  Allows removing individual items.
- *
- * PROPS:
- *  - cart    {array}    The current cart items (owned by App.jsx)
- *  - setCart {function} Updates cart state in App.jsx
- *
- * NOTE:
- *  Phase 4 will replace this with a persistent cart backed by MongoDB.
- *  Currently cart lives in React state and clears on page refresh.
+ * PHASE 4 UPDATE:
+ *  - Displays cart items from MongoDB
+ *  - Remove item calls DELETE /api/cart/:productId
+ *  - Update quantity calls PUT /api/cart/:productId
+ *  - Clear cart calls DELETE /api/cart
+ *  - Total price calculation
  */
 
+import { useState } from 'react';
 import { IoCart } from 'react-icons/io5';
-import ProductCard from '../components/product/ProductCard';
+import { FaTrash, FaPlus, FaMinus } from 'react-icons/fa';
+import Swal from 'sweetalert2';
+import api from '../services/api';
 import styles from './Cart.module.css';
 
 export default function Cart({ cart = [], setCart = () => {} }) {
+  const [loading, setLoading] = useState(false);
 
-  // ─── Remove Item From Cart ──────────────────────────────────────
-  const handleRemoveFromCart = (id) => {
-    // Filter out the item whose id matches the one to remove
-    const updatedCart = cart.filter((item) => item.id !== id);
-    setCart(updatedCart);
+  // ─── Calculate Total Price ────────────────────────────────────────
+  const totalPrice = cart.reduce(
+    (total, item) => total + item.price * item.quantity,
+    0
+  );
+
+  // ─── Remove Item From Cart ────────────────────────────────────────
+  const handleRemove = async (productId, title) => {
+    try {
+      setLoading(true);
+      const response = await api.delete(`/cart/${productId}`);
+      setCart(response.data.items);
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Removed',
+        text: `"${title}" removed from cart.`,
+        timer: 1200,
+        showConfirmButton: false,
+      });
+    } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Failed to remove item',
+        text: error.response?.data?.message || 'Please try again.',
+        confirmButtonColor: '#333',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ─── Update Item Quantity ─────────────────────────────────────────
+  const handleQuantityChange = async (productId, newQuantity) => {
+    // If quantity goes to 0, remove the item instead
+    if (newQuantity < 1) return;
+
+    try {
+      setLoading(true);
+      const response = await api.put(`/cart/${productId}`, {
+        quantity: newQuantity,
+      });
+      setCart(response.data.items);
+    } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Failed to update quantity',
+        text: error.response?.data?.message || 'Please try again.',
+        confirmButtonColor: '#333',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ─── Clear Entire Cart ────────────────────────────────────────────
+  const handleClearCart = async () => {
+    Swal.fire({
+      title: 'Clear Cart?',
+      text: 'Are you sure you want to remove all items?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#333',
+      confirmButtonText: 'Yes, clear it',
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          setLoading(true);
+          await api.delete('/cart');
+          setCart([]);
+
+          Swal.fire({
+            icon: 'success',
+            title: 'Cart Cleared',
+            timer: 1200,
+            showConfirmButton: false,
+          });
+        } catch (error) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Failed to clear cart',
+            text: error.response?.data?.message || 'Please try again.',
+            confirmButtonColor: '#333',
+          });
+        } finally {
+          setLoading(false);
+        }
+      }
+    });
   };
 
   return (
@@ -37,22 +121,84 @@ export default function Cart({ cart = [], setCart = () => {} }) {
       {cart.length === 0 ? (
         <div className={styles.emptyCart}>
           <p>Your cart is empty!</p>
-          {/* empty_cart.png lives in /public — accessible via root path */}
-          <img src="empty_cart.png" alt="Empty cart illustration" className={styles.emptyImage} />
+          <img
+            src="empty_cart.png"
+            alt="Empty cart illustration"
+            className={styles.emptyImage}
+          />
         </div>
       ) : (
-        /* ── Cart Items Grid ──────────────────────────────────── */
-        <div className={styles.cartGrid}>
-          {cart.map((item) => (
-            <ProductCard
-              key={item.id}
-              title={item.title}
-              description={`Price: $${item.price} | Rating: ${item.rating}`}
-              image={item.thumbnail}
-              onAction={() => handleRemoveFromCart(item.id)}
-              actionLabel="Remove"
-            />
-          ))}
+        <div>
+          {/* ── Cart Items ────────────────────────────────────── */}
+          <div className={styles.cartGrid}>
+            {cart.map((item) => (
+              <div key={item.productId} className={styles.cartItem}>
+                {/* Product Image */}
+                <img
+                  src={item.thumbnail}
+                  alt={item.title}
+                  className={styles.cartImage}
+                />
+
+                {/* Product Details */}
+                <div className={styles.cartDetails}>
+                  <h4 className={styles.cartTitle}>{item.title}</h4>
+                  <p className={styles.cartPrice}>
+                    ${item.price} × {item.quantity} = $
+                    {(item.price * item.quantity).toFixed(2)}
+                  </p>
+
+                  {/* Quantity Controls */}
+                  <div className={styles.quantityControls}>
+                    <button
+                      className={styles.quantityBtn}
+                      onClick={() =>
+                        handleQuantityChange(item.productId, item.quantity - 1)
+                      }
+                      disabled={loading || item.quantity <= 1}
+                    >
+                      <FaMinus />
+                    </button>
+
+                    <span className={styles.quantity}>{item.quantity}</span>
+
+                    <button
+                      className={styles.quantityBtn}
+                      onClick={() =>
+                        handleQuantityChange(item.productId, item.quantity + 1)
+                      }
+                      disabled={loading}
+                    >
+                      <FaPlus />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Remove Button */}
+                <button
+                  className={styles.removeBtn}
+                  onClick={() => handleRemove(item.productId, item.title)}
+                  disabled={loading}
+                >
+                  <FaTrash />
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {/* ── Cart Summary ──────────────────────────────────── */}
+          <div className={styles.cartSummary}>
+            <h3 className={styles.totalPrice}>
+              Total: ${totalPrice.toFixed(2)}
+            </h3>
+            <button
+              className={styles.clearBtn}
+              onClick={handleClearCart}
+              disabled={loading}
+            >
+              Clear Cart
+            </button>
+          </div>
         </div>
       )}
     </div>
