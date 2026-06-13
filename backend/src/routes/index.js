@@ -8,6 +8,7 @@ import productRoutes from "./product.routes.js";
 import userRoutes from "./user.routes.js";
 import uploadRoutes from "./upload.routes.js";
 import wishlistRoutes from "./wishlist.routes.js";
+import reviewRoutes from "./review.routes.js";
 
 const router = express.Router();
 
@@ -37,10 +38,15 @@ router.use("/users", userRoutes);
 router.use("/upload", uploadRoutes);
 
 // ─── Wishlist Routes ──────────────────────────────────────────────
-// GET    /api/wishlist
-// POST   /api/wishlist
-// DELETE /api/wishlist/:productId
-// DELETE /api/wishlist
 router.use("/wishlist", wishlistRoutes);
+
+// ─── Review Routes ────────────────────────────────────────────────
+// GET    /api/reviews/:productId
+// POST   /api/reviews/:productId
+// DELETE /api/reviews/:id
+router.use("/reviews", reviewRoutes);
+
+// Future routes
+// router.use("/orders", orderRoutes);
 
 export default router;

@@ -22,6 +22,7 @@ export const ROUTES = {
   CONTACT: "/contact",
   LOGIN: "/login",
   REGISTER: "/register",
+  PRODUCT_DETAIL: "/products/:id",
 
   // Protected routes — only accessible when logged in
   CART: "/cart",

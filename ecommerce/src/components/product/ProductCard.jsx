@@ -1,10 +1,9 @@
 /**
  * ProductCard.jsx — Reusable Product Display Component
  *
- * PHASE 7 UPDATE:
- *  - Added wishlist heart button
- *  - Heart fills red when product is in wishlist
- *  - onWishlist prop handles add/remove from wishlist
+ * PHASE 8 UPDATE:
+ *  - Card is now clickable — navigates to product detail page
+ *  - onCardClick prop handles navigation
  */
 
 import { Button, Card } from 'antd';
@@ -21,9 +20,12 @@ const ProductCard = ({
   actionLabel,
   onWishlist,
   isWishlisted,
+  onCardClick,
 }) => (
   <Card
     className={styles.card}
+    onClick={onCardClick}
+    style={{ cursor: onCardClick ? 'pointer' : 'default' }}
     cover={
       <div className={styles.imageContainer}>
         <img
@@ -59,12 +61,17 @@ const ProductCard = ({
     />
 
     {/* Action button */}
-    <Button
-      onClick={onAction}
-      style={{ marginTop: 10, backgroundColor: '#ffce12' }}
-    >
-      {actionLabel}
-    </Button>
+    {onAction && (
+      <Button
+        onClick={(e) => {
+          e.stopPropagation(); // prevent card click
+          onAction();
+        }}
+        style={{ marginTop: 10, backgroundColor: '#ffce12' }}
+      >
+        {actionLabel}
+      </Button>
+    )}
   </Card>
 );
 

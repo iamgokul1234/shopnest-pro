@@ -1,4 +1,13 @@
+/**
+ * Home.jsx — Product Listing Page
+ *
+ * PHASE 8 UPDATE:
+ *  - Product cards are now clickable
+ *  - Clicking a card navigates to product detail page
+ */
+
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import ProductCard from "../components/product/ProductCard";
 import api, { dummyApi } from "../services/api";
@@ -14,6 +23,7 @@ export default function Home({
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   // ─── Fetch Products On Mount ─────────────────────────────────────
   useEffect(() => {
@@ -98,14 +108,12 @@ export default function Home({
       return;
     }
 
-    // Check if already in wishlist
     const isWishlisted = wishlist.find(
       (w) => w.productId === item.id.toString(),
     );
 
     try {
       if (isWishlisted) {
-        // Remove from wishlist
         const response = await api.delete(`/wishlist/${item.id}`);
         setWishlist(response.data.items);
 
@@ -116,7 +124,6 @@ export default function Home({
           showConfirmButton: false,
         });
       } else {
-        // Add to wishlist
         const response = await api.post("/wishlist", {
           productId: item.id.toString(),
           title: item.title,
@@ -201,6 +208,7 @@ export default function Home({
             isWishlisted={
               !!wishlist.find((w) => w.productId === product.id.toString())
             }
+            onCardClick={() => navigate(`/products/${product.id}`)}
           />
         ))}
       </div>
