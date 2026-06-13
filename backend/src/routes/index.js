@@ -7,6 +7,7 @@ import cartRoutes from "./cart.routes.js";
 import productRoutes from "./product.routes.js";
 import userRoutes from "./user.routes.js";
 import uploadRoutes from "./upload.routes.js";
+import wishlistRoutes from "./wishlist.routes.js";
 
 const router = express.Router();
 
@@ -33,7 +34,13 @@ router.use("/products", productRoutes);
 router.use("/users", userRoutes);
 
 // ─── Upload Routes ────────────────────────────────────────────────
-// POST /api/upload — upload image to Cloudinary
 router.use("/upload", uploadRoutes);
+
+// ─── Wishlist Routes ──────────────────────────────────────────────
+// GET    /api/wishlist
+// POST   /api/wishlist
+// DELETE /api/wishlist/:productId
+// DELETE /api/wishlist
+router.use("/wishlist", wishlistRoutes);
 
 export default router;

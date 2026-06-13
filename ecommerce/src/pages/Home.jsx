@@ -1,18 +1,16 @@
-/**
- * Home.jsx — Product Listing Page
- *
- * PHASE 4 UPDATE:
- *  - Add to cart now calls POST /api/cart
- *  - Cart state synced with MongoDB
- */
+import { useEffect, useState } from "react";
+import Swal from "sweetalert2";
+import ProductCard from "../components/product/ProductCard";
+import api, { dummyApi } from "../services/api";
+import styles from "./Home.module.css";
 
-import { useEffect, useState } from 'react';
-import Swal from 'sweetalert2';
-import ProductCard from '../components/product/ProductCard';
-import api, { dummyApi } from '../services/api';
-import styles from './Home.module.css';
-
-export default function Home({ search = '', cart = [], setCart = () => {} }) {
+export default function Home({
+  search = "",
+  cart = [],
+  setCart = () => {},
+  wishlist = [],
+  setWishlist = () => {},
+}) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -23,10 +21,10 @@ export default function Home({ search = '', cart = [], setCart = () => {} }) {
       try {
         setLoading(true);
         setError(null);
-        const response = await dummyApi.get('/products');
+        const response = await dummyApi.get("/products");
         setProducts(response.data.products);
       } catch (err) {
-        setError('Failed to load products. Please try again.');
+        setError("Failed to load products. Please try again.");
       } finally {
         setLoading(false);
       }
@@ -37,45 +35,41 @@ export default function Home({ search = '', cart = [], setCart = () => {} }) {
 
   // ─── Add To Cart ─────────────────────────────────────────────────
   const handleAddToCart = async (item) => {
-    // Check if user is logged in
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     if (!token) {
       Swal.fire({
-        icon: 'warning',
-        title: 'Login Required',
-        text: 'Please login to add items to your cart.',
-        confirmButtonColor: '#333',
+        icon: "warning",
+        title: "Login Required",
+        text: "Please login to add items to your cart.",
+        confirmButtonColor: "#333",
       });
       return;
     }
 
-    // Check if product is already in cart
     const alreadyInCart = cart.find((p) => p.productId === item.id);
 
     try {
-      // Call our backend API to add item
-      const response = await api.post('/cart', {
+      const response = await api.post("/cart", {
         productId: item.id,
         title: item.title,
         price: item.price,
         thumbnail: item.thumbnail,
       });
 
-      // Update cart state with response from API
       setCart(response.data.items);
 
       if (alreadyInCart) {
         Swal.fire({
-          icon: 'info',
-          title: 'Quantity Updated',
+          icon: "info",
+          title: "Quantity Updated",
           text: `"${item.title}" quantity increased.`,
           timer: 1500,
           showConfirmButton: false,
         });
       } else {
         Swal.fire({
-          icon: 'success',
-          title: 'Added to Cart!',
+          icon: "success",
+          title: "Added to Cart!",
           text: `"${item.title}" has been added.`,
           timer: 1500,
           showConfirmButton: false,
@@ -83,23 +77,83 @@ export default function Home({ search = '', cart = [], setCart = () => {} }) {
       }
     } catch (error) {
       Swal.fire({
-        icon: 'error',
-        title: 'Failed to add item',
-        text: error.response?.data?.message || 'Please try again.',
-        confirmButtonColor: '#333',
+        icon: "error",
+        title: "Failed to add item",
+        text: error.response?.data?.message || "Please try again.",
+        confirmButtonColor: "#333",
+      });
+    }
+  };
+
+  // ─── Toggle Wishlist ──────────────────────────────────────────────
+  const handleWishlist = async (item) => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      Swal.fire({
+        icon: "warning",
+        title: "Login Required",
+        text: "Please login to add items to your wishlist.",
+        confirmButtonColor: "#333",
+      });
+      return;
+    }
+
+    // Check if already in wishlist
+    const isWishlisted = wishlist.find(
+      (w) => w.productId === item.id.toString(),
+    );
+
+    try {
+      if (isWishlisted) {
+        // Remove from wishlist
+        const response = await api.delete(`/wishlist/${item.id}`);
+        setWishlist(response.data.items);
+
+        Swal.fire({
+          icon: "info",
+          title: "Removed from Wishlist",
+          timer: 1200,
+          showConfirmButton: false,
+        });
+      } else {
+        // Add to wishlist
+        const response = await api.post("/wishlist", {
+          productId: item.id.toString(),
+          title: item.title,
+          price: item.price,
+          thumbnail: item.thumbnail,
+          rating: item.rating,
+        });
+        setWishlist(response.data.items);
+
+        Swal.fire({
+          icon: "success",
+          title: "Added to Wishlist!",
+          timer: 1200,
+          showConfirmButton: false,
+        });
+      }
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Failed",
+        text: error.response?.data?.message || "Please try again.",
+        confirmButtonColor: "#333",
       });
     }
   };
 
   // ─── Filter Products By Search ───────────────────────────────────
   const filteredProducts = products.filter((p) =>
-    p.title.toLowerCase().includes(search.toLowerCase())
+    p.title.toLowerCase().includes(search.toLowerCase()),
   );
 
   // ─── Render States ───────────────────────────────────────────────
   if (loading) {
     return (
-      <div style={{ textAlign: 'center', marginTop: '100px', fontSize: '20px' }}>
+      <div
+        style={{ textAlign: "center", marginTop: "100px", fontSize: "20px" }}
+      >
         Loading products...
       </div>
     );
@@ -107,7 +161,14 @@ export default function Home({ search = '', cart = [], setCart = () => {} }) {
 
   if (error) {
     return (
-      <div style={{ textAlign: 'center', marginTop: '100px', color: 'red', fontSize: '20px' }}>
+      <div
+        style={{
+          textAlign: "center",
+          marginTop: "100px",
+          color: "red",
+          fontSize: "20px",
+        }}
+      >
         {error}
       </div>
     );
@@ -115,7 +176,9 @@ export default function Home({ search = '', cart = [], setCart = () => {} }) {
 
   if (filteredProducts.length === 0) {
     return (
-      <div style={{ textAlign: 'center', marginTop: '100px', fontSize: '20px' }}>
+      <div
+        style={{ textAlign: "center", marginTop: "100px", fontSize: "20px" }}
+      >
         No products found for "{search}"
       </div>
     );
@@ -134,6 +197,10 @@ export default function Home({ search = '', cart = [], setCart = () => {} }) {
             image={product.thumbnail}
             onAction={() => handleAddToCart(product)}
             actionLabel="Add to Cart"
+            onWishlist={() => handleWishlist(product)}
+            isWishlisted={
+              !!wishlist.find((w) => w.productId === product.id.toString())
+            }
           />
         ))}
       </div>

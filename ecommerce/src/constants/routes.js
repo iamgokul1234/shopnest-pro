@@ -17,21 +17,22 @@
 
 export const ROUTES = {
   // Public routes — accessible by everyone
-  HOME: '/',
-  ABOUT: '/about',
-  CONTACT: '/contact',
-  LOGIN: '/login',
-  REGISTER: '/register',
+  HOME: "/",
+  ABOUT: "/about",
+  CONTACT: "/contact",
+  LOGIN: "/login",
+  REGISTER: "/register",
 
   // Protected routes — only accessible when logged in
-  CART: '/cart',
+  CART: "/cart",
+  WISHLIST: "/wishlist",
 
   // Admin routes — only accessible by admin users (Phase 5)
-  ADMIN: '/admin',
-  ADMIN_PRODUCTS: '/admin/products',
-  ADMIN_USERS: '/admin/users',
-  ADMIN_ORDERS: '/admin/orders',
+  ADMIN: "/admin",
+  ADMIN_PRODUCTS: "/admin/products",
+  ADMIN_USERS: "/admin/users",
+  ADMIN_ORDERS: "/admin/orders",
 
   // Error route
-  NOT_FOUND: '*',
+  NOT_FOUND: "*",
 };

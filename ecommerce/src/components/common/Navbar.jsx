@@ -1,12 +1,3 @@
-/**
- * Navbar.jsx — Global Navigation Component
- *
- * PHASE 3 UPDATE:
- *  - Receives isLoggedIn, currentUser, onLogout as props from App.jsx
- *  - No longer reads localStorage directly
- *  - Auth state is now controlled by App.jsx (single source of truth)
- */
-
 import { useEffect, useRef, useState } from "react";
 import { BsCartCheckFill } from "react-icons/bs";
 import { IoCloseSharp, IoLogoReact, IoCart } from "react-icons/io5";
@@ -15,7 +6,7 @@ import {
   MdOutlineAccountCircle,
   MdOutlineSearch,
 } from "react-icons/md";
-import { FaHome } from "react-icons/fa";
+import { FaHome, FaHeart } from "react-icons/fa";
 import {
   IoIosInformationCircleOutline,
   IoMdLogIn,
@@ -31,6 +22,7 @@ export default function Navbar({
   search,
   setSearch,
   cart,
+  wishlist,
   isLoggedIn,
   currentUser,
   onLogout,
@@ -62,7 +54,6 @@ export default function Navbar({
       confirmButtonText: "Yes, logout",
     }).then((result) => {
       if (result.isConfirmed) {
-        // Call App.jsx logout handler
         onLogout();
         setIsSidebarOpen(false);
 
@@ -126,6 +117,27 @@ export default function Navbar({
               <MdOutlineSearch />
             </span>
           </div>
+
+          {/* Wishlist icon — only shown when logged in */}
+          {isLoggedIn && (
+            <Link to={ROUTES.WISHLIST}>
+              <span
+                style={{
+                  color: "#ffff",
+                  fontSize: "18px",
+                  marginLeft: "10px",
+                  position: "relative",
+                  padding: "10px",
+                  borderRadius: "2px",
+                }}
+              >
+                <FaHeart />
+                <span style={{ position: "absolute", top: "0", right: "0" }}>
+                  {wishlist?.length || 0}
+                </span>
+              </span>
+            </Link>
+          )}
 
           {/* Cart icon with item count badge */}
           <Link to={ROUTES.CART}>
@@ -218,6 +230,14 @@ export default function Navbar({
         <Link to={ROUTES.CONTACT} onClick={() => setIsSidebarOpen(false)}>
           <BiSolidPhoneCall /> Contact
         </Link>
+
+        {/* Wishlist link — only shown when logged in */}
+        {isLoggedIn && (
+          <Link to={ROUTES.WISHLIST} onClick={() => setIsSidebarOpen(false)}>
+            <FaHeart /> Wishlist ({wishlist?.length || 0})
+          </Link>
+        )}
+
         <Link to={ROUTES.CART} onClick={() => setIsSidebarOpen(false)}>
           <IoCart /> Cart ({cart?.length || 0})
         </Link>
