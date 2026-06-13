@@ -1,24 +1,20 @@
 /**
  * AdminDashboard.jsx — Admin Control Panel
  *
- * FEATURES:
- *  - View all products from our own database
- *  - Add new products
- *  - Edit existing products
- *  - Delete products
- *  - View all registered users
- *  - Delete users
- *  - Update user roles
+ * PHASE 6 UPDATE:
+ *  - Added image upload to Cloudinary
+ *  - Image preview before submitting
+ *  - Upload progress indicator
  */
 
-import { useState, useEffect } from 'react';
-import Swal from 'sweetalert2';
-import api from '../services/api';
-import styles from './AdminDashboard.module.css';
+import { useState, useEffect } from "react";
+import Swal from "sweetalert2";
+import api from "../services/api";
+import styles from "./AdminDashboard.module.css";
 
 export default function AdminDashboard() {
   // ─── Tab State ────────────────────────────────────────────────
-  const [activeTab, setActiveTab] = useState('products');
+  const [activeTab, setActiveTab] = useState("products");
 
   // ─── Products State ───────────────────────────────────────────
   const [products, setProducts] = useState([]);
@@ -32,27 +28,32 @@ export default function AdminDashboard() {
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [productForm, setProductForm] = useState({
-    title: '',
-    description: '',
-    price: '',
-    thumbnail: '',
-    category: '',
-    stock: '',
-    rating: '',
+    title: "",
+    description: "",
+    price: "",
+    thumbnail: "",
+    category: "",
+    stock: "",
+    rating: "",
   });
+
+  // ─── Image Upload State ───────────────────────────────────────
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [uploading, setUploading] = useState(false);
 
   // ─── Fetch Products ───────────────────────────────────────────
   const fetchProducts = async () => {
     try {
       setProductLoading(true);
-      const response = await api.get('/products');
+      const response = await api.get("/products");
       setProducts(response.data.products);
     } catch (error) {
       Swal.fire({
-        icon: 'error',
-        title: 'Failed to load products',
-        text: error.response?.data?.message || 'Please try again.',
-        confirmButtonColor: '#333',
+        icon: "error",
+        title: "Failed to load products",
+        text: error.response?.data?.message || "Please try again.",
+        confirmButtonColor: "#333",
       });
     } finally {
       setProductLoading(false);
@@ -63,14 +64,14 @@ export default function AdminDashboard() {
   const fetchUsers = async () => {
     try {
       setUserLoading(true);
-      const response = await api.get('/users');
+      const response = await api.get("/users");
       setUsers(response.data.users);
     } catch (error) {
       Swal.fire({
-        icon: 'error',
-        title: 'Failed to load users',
-        text: error.response?.data?.message || 'Please try again.',
-        confirmButtonColor: '#333',
+        icon: "error",
+        title: "Failed to load users",
+        text: error.response?.data?.message || "Please try again.",
+        confirmButtonColor: "#333",
       });
     } finally {
       setUserLoading(false);
@@ -89,19 +90,87 @@ export default function AdminDashboard() {
     setProductForm({ ...productForm, [name]: value });
   };
 
+  // ─── Handle Image File Selection ──────────────────────────────
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      Swal.fire({
+        icon: "error",
+        title: "Invalid File",
+        text: "Please select an image file.",
+        confirmButtonColor: "#333",
+      });
+      return;
+    }
+
+    // Validate file size (5MB max)
+    if (file.size > 1024 * 1024 * 5) {
+      Swal.fire({
+        icon: "error",
+        title: "File Too Large",
+        text: "Image must be less than 5MB.",
+        confirmButtonColor: "#333",
+      });
+      return;
+    }
+
+    setImageFile(file);
+
+    // Create local preview URL
+    const previewUrl = URL.createObjectURL(file);
+    setImagePreview(previewUrl);
+  };
+
+  // ─── Upload Image To Cloudinary ───────────────────────────────
+  const uploadImage = async () => {
+    if (!imageFile) return null;
+
+    setUploading(true);
+
+    try {
+      // Create FormData — required for file uploads
+      const formData = new FormData();
+      formData.append("image", imageFile);
+
+      // Use axios with multipart/form-data
+      const response = await api.post("/upload", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      return response.data.imageUrl;
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Image Upload Failed",
+        text: error.response?.data?.message || "Please try again.",
+        confirmButtonColor: "#333",
+      });
+      return null;
+    } finally {
+      setUploading(false);
+    }
+  };
+
   // ─── Reset Product Form ───────────────────────────────────────
   const resetForm = () => {
     setProductForm({
-      title: '',
-      description: '',
-      price: '',
-      thumbnail: '',
-      category: '',
-      stock: '',
-      rating: '',
+      title: "",
+      description: "",
+      price: "",
+      thumbnail: "",
+      category: "",
+      stock: "",
+      rating: "",
     });
     setEditingProduct(null);
     setShowForm(false);
+    setImageFile(null);
+    setImagePreview(null);
   };
 
   // ─── Handle Edit Product ──────────────────────────────────────
@@ -116,31 +185,55 @@ export default function AdminDashboard() {
       stock: product.stock,
       rating: product.rating,
     });
+    // Show existing image as preview
+    setImagePreview(product.thumbnail);
+    setImageFile(null);
     setShowForm(true);
-    // Scroll to form
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   // ─── Handle Submit Product Form ───────────────────────────────
   const handleProductSubmit = async (e) => {
     e.preventDefault();
 
+    let thumbnailUrl = productForm.thumbnail;
+
+    // If a new image was selected, upload it first
+    if (imageFile) {
+      thumbnailUrl = await uploadImage();
+      if (!thumbnailUrl) return; // Upload failed, stop here
+    }
+
+    // Make sure we have a thumbnail
+    if (!thumbnailUrl) {
+      Swal.fire({
+        icon: "error",
+        title: "Image Required",
+        text: "Please upload a product image.",
+        confirmButtonColor: "#333",
+      });
+      return;
+    }
+
     try {
+      const productData = {
+        ...productForm,
+        thumbnail: thumbnailUrl,
+      };
+
       if (editingProduct) {
-        // Update existing product
-        await api.put(`/products/${editingProduct._id}`, productForm);
+        await api.put(`/products/${editingProduct._id}`, productData);
         Swal.fire({
-          icon: 'success',
-          title: 'Product Updated',
+          icon: "success",
+          title: "Product Updated",
           timer: 1500,
           showConfirmButton: false,
         });
       } else {
-        // Create new product
-        await api.post('/products', productForm);
+        await api.post("/products", productData);
         Swal.fire({
-          icon: 'success',
-          title: 'Product Created',
+          icon: "success",
+          title: "Product Created",
           timer: 1500,
           showConfirmButton: false,
         });
@@ -150,10 +243,10 @@ export default function AdminDashboard() {
       fetchProducts();
     } catch (error) {
       Swal.fire({
-        icon: 'error',
-        title: 'Failed to save product',
-        text: error.response?.data?.message || 'Please try again.',
-        confirmButtonColor: '#333',
+        icon: "error",
+        title: "Failed to save product",
+        text: error.response?.data?.message || "Please try again.",
+        confirmButtonColor: "#333",
       });
     }
   };
@@ -162,28 +255,28 @@ export default function AdminDashboard() {
   const handleDeleteProduct = async (id, title) => {
     Swal.fire({
       title: `Delete "${title}"?`,
-      text: 'This cannot be undone.',
-      icon: 'warning',
+      text: "This cannot be undone.",
+      icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#333',
-      confirmButtonText: 'Yes, delete',
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#333",
+      confirmButtonText: "Yes, delete",
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
           await api.delete(`/products/${id}`);
           Swal.fire({
-            icon: 'success',
-            title: 'Product Deleted',
+            icon: "success",
+            title: "Product Deleted",
             timer: 1200,
             showConfirmButton: false,
           });
           fetchProducts();
         } catch (error) {
           Swal.fire({
-            icon: 'error',
-            title: 'Failed to delete product',
-            confirmButtonColor: '#333',
+            icon: "error",
+            title: "Failed to delete product",
+            confirmButtonColor: "#333",
           });
         }
       }
@@ -194,29 +287,29 @@ export default function AdminDashboard() {
   const handleDeleteUser = async (id, name) => {
     Swal.fire({
       title: `Delete user "${name}"?`,
-      text: 'This cannot be undone.',
-      icon: 'warning',
+      text: "This cannot be undone.",
+      icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#333',
-      confirmButtonText: 'Yes, delete',
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#333",
+      confirmButtonText: "Yes, delete",
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
           await api.delete(`/users/${id}`);
           Swal.fire({
-            icon: 'success',
-            title: 'User Deleted',
+            icon: "success",
+            title: "User Deleted",
             timer: 1200,
             showConfirmButton: false,
           });
           fetchUsers();
         } catch (error) {
           Swal.fire({
-            icon: 'error',
-            title: 'Failed to delete user',
-            text: error.response?.data?.message || 'Please try again.',
-            confirmButtonColor: '#333',
+            icon: "error",
+            title: "Failed to delete user",
+            text: error.response?.data?.message || "Please try again.",
+            confirmButtonColor: "#333",
           });
         }
       }
@@ -225,31 +318,31 @@ export default function AdminDashboard() {
 
   // ─── Handle Update User Role ──────────────────────────────────
   const handleRoleChange = async (id, currentRole) => {
-    const newRole = currentRole === 'admin' ? 'user' : 'admin';
+    const newRole = currentRole === "admin" ? "user" : "admin";
 
     Swal.fire({
       title: `Change role to "${newRole}"?`,
-      icon: 'question',
+      icon: "question",
       showCancelButton: true,
-      confirmButtonColor: '#333',
-      confirmButtonText: 'Yes, change',
+      confirmButtonColor: "#333",
+      confirmButtonText: "Yes, change",
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
           await api.put(`/users/${id}`, { role: newRole });
           Swal.fire({
-            icon: 'success',
-            title: 'Role Updated',
+            icon: "success",
+            title: "Role Updated",
             timer: 1200,
             showConfirmButton: false,
           });
           fetchUsers();
         } catch (error) {
           Swal.fire({
-            icon: 'error',
-            title: 'Failed to update role',
-            text: error.response?.data?.message || 'Please try again.',
-            confirmButtonColor: '#333',
+            icon: "error",
+            title: "Failed to update role",
+            text: error.response?.data?.message || "Please try again.",
+            confirmButtonColor: "#333",
           });
         }
       }
@@ -263,38 +356,37 @@ export default function AdminDashboard() {
       {/* ── Tabs ─────────────────────────────────────────────── */}
       <div className={styles.tabs}>
         <button
-          className={`${styles.tab} ${activeTab === 'products' ? styles.activeTab : ''}`}
-          onClick={() => setActiveTab('products')}
+          className={`${styles.tab} ${activeTab === "products" ? styles.activeTab : ""}`}
+          onClick={() => setActiveTab("products")}
         >
           Products ({products.length})
         </button>
         <button
-          className={`${styles.tab} ${activeTab === 'users' ? styles.activeTab : ''}`}
-          onClick={() => setActiveTab('users')}
+          className={`${styles.tab} ${activeTab === "users" ? styles.activeTab : ""}`}
+          onClick={() => setActiveTab("users")}
         >
           Users ({users.length})
         </button>
       </div>
 
       {/* ── Products Tab ─────────────────────────────────────── */}
-      {activeTab === 'products' && (
+      {activeTab === "products" && (
         <div className={styles.tabContent}>
-
           {/* Add Product Button */}
           <button
             className={styles.addBtn}
-            onClick={() => { resetForm(); setShowForm(!showForm); }}
+            onClick={() => {
+              resetForm();
+              setShowForm(!showForm);
+            }}
           >
-            {showForm ? 'Cancel' : '+ Add Product'}
+            {showForm ? "Cancel" : "+ Add Product"}
           </button>
 
           {/* Product Form */}
           {showForm && (
-            <form
-              className={styles.productForm}
-              onSubmit={handleProductSubmit}
-            >
-              <h3>{editingProduct ? 'Edit Product' : 'Add New Product'}</h3>
+            <form className={styles.productForm} onSubmit={handleProductSubmit}>
+              <h3>{editingProduct ? "Edit Product" : "Add New Product"}</h3>
 
               <div className={styles.formGrid}>
                 <input
@@ -323,6 +415,7 @@ export default function AdminDashboard() {
                   onChange={handleFormChange}
                   required
                   min="0"
+                  step="0.01"
                   className={styles.input}
                 />
                 <input
@@ -345,15 +438,44 @@ export default function AdminDashboard() {
                   step="0.1"
                   className={styles.input}
                 />
+              </div>
+
+              {/* ── Image Upload Section ────────────────────── */}
+              <div className={styles.imageUploadSection}>
+                <label className={styles.imageUploadLabel}>Product Image</label>
+
+                {/* Image Preview */}
+                {imagePreview && (
+                  <div className={styles.imagePreviewContainer}>
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
+                      className={styles.imagePreview}
+                    />
+                  </div>
+                )}
+
+                {/* File Input */}
                 <input
-                  type="text"
-                  name="thumbnail"
-                  placeholder="Thumbnail URL"
-                  value={productForm.thumbnail}
-                  onChange={handleFormChange}
-                  required
-                  className={styles.input}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className={styles.fileInput}
+                  id="product-image"
                 />
+                <label
+                  htmlFor="product-image"
+                  className={styles.fileInputLabel}
+                >
+                  {imageFile ? imageFile.name : "Choose Image"}
+                </label>
+
+                {/* Upload Status */}
+                {uploading && (
+                  <p className={styles.uploadingText}>
+                    Uploading to Cloudinary...
+                  </p>
+                )}
               </div>
 
               <textarea
@@ -367,8 +489,16 @@ export default function AdminDashboard() {
               />
 
               <div className={styles.formActions}>
-                <button type="submit" className={styles.submitBtn}>
-                  {editingProduct ? 'Update Product' : 'Create Product'}
+                <button
+                  type="submit"
+                  className={styles.submitBtn}
+                  disabled={uploading}
+                >
+                  {uploading
+                    ? "Uploading..."
+                    : editingProduct
+                      ? "Update Product"
+                      : "Create Product"}
                 </button>
                 <button
                   type="button"
@@ -441,7 +571,7 @@ export default function AdminDashboard() {
       )}
 
       {/* ── Users Tab ────────────────────────────────────────── */}
-      {activeTab === 'users' && (
+      {activeTab === "users" && (
         <div className={styles.tabContent}>
           {userLoading ? (
             <p>Loading users...</p>
@@ -465,7 +595,7 @@ export default function AdminDashboard() {
                       <td>
                         <span
                           className={
-                            user.role === 'admin'
+                            user.role === "admin"
                               ? styles.adminBadge
                               : styles.userBadge
                           }
@@ -473,23 +603,17 @@ export default function AdminDashboard() {
                           {user.role}
                         </span>
                       </td>
-                      <td>
-                        {new Date(user.createdAt).toLocaleDateString()}
-                      </td>
+                      <td>{new Date(user.createdAt).toLocaleDateString()}</td>
                       <td>
                         <button
                           className={styles.editBtn}
-                          onClick={() =>
-                            handleRoleChange(user._id, user.role)
-                          }
+                          onClick={() => handleRoleChange(user._id, user.role)}
                         >
                           Toggle Role
                         </button>
                         <button
                           className={styles.deleteBtn}
-                          onClick={() =>
-                            handleDeleteUser(user._id, user.name)
-                          }
+                          onClick={() => handleDeleteUser(user._id, user.name)}
                         >
                           Delete
                         </button>
