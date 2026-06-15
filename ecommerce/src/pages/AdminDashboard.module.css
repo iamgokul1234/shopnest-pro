@@ -329,6 +329,15 @@
   margin: 0;
 }
 
+/* ─── Order Status Badge ────────────────────────────────────────── */
+.statusBadge {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 /* ─── Responsive ────────────────────────────────────────────────── */
 @media screen and (max-width: 768px) {
   .dashboard {

@@ -218,3 +218,33 @@
     text-align: center;
   }
 }
+
+/* ─── Cart Actions ──────────────────────────────────────────────── */
+.cartActions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* ─── Checkout Button ───────────────────────────────────────────── */
+.checkoutBtn {
+  background: #222;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.checkoutBtn:hover:not(:disabled) {
+  background: #444;
+}
+
+.checkoutBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

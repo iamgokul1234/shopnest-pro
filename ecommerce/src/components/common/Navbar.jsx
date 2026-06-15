@@ -6,7 +6,7 @@ import {
   MdOutlineAccountCircle,
   MdOutlineSearch,
 } from "react-icons/md";
-import { FaHome, FaHeart } from "react-icons/fa";
+import { FaHome, FaHeart, FaShoppingBag } from "react-icons/fa";
 import {
   IoIosInformationCircleOutline,
   IoMdLogIn,
@@ -168,6 +168,11 @@ export default function Navbar({
                 </Link>
               )}
 
+              {/* Orders link */}
+              <Link to={ROUTES.ORDERS}>
+                <span className={styles.navs}>Orders</span>
+              </Link>
+
               <span className={styles.navs} style={{ cursor: "default" }}>
                 <MdOutlineAccountCircle style={{ fontSize: "20px" }} />{" "}
                 {currentUser?.name}
@@ -235,6 +240,12 @@ export default function Navbar({
         {isLoggedIn && (
           <Link to={ROUTES.WISHLIST} onClick={() => setIsSidebarOpen(false)}>
             <FaHeart /> Wishlist ({wishlist?.length || 0})
+          </Link>
+        )}
+
+        {isLoggedIn && (
+          <Link to={ROUTES.ORDERS} onClick={() => setIsSidebarOpen(false)}>
+            <FaShoppingBag /> Orders
           </Link>
         )}
 

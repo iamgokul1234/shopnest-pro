@@ -27,6 +27,9 @@ export const ROUTES = {
   // Protected routes — only accessible when logged in
   CART: "/cart",
   WISHLIST: "/wishlist",
+  CHECKOUT: "/checkout",
+  ORDERS: "/orders",
+  ORDER_DETAIL: "/orders/:id",
 
   // Admin routes — only accessible by admin users (Phase 5)
   ADMIN: "/admin",

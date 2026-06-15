@@ -11,6 +11,8 @@ import Cart from "../pages/Cart";
 import Wishlist from "../pages/Wishlist";
 import AdminDashboard from "../pages/AdminDashboard";
 import ProductDetail from "../pages/ProductDetail";
+import Checkout from "../pages/Checkout";
+import Orders from "../pages/Orders";
 
 // ─── Route Guards ─────────────────────────────────────────────────
 import NotFound from "../components/common/NotFound";
@@ -44,8 +46,6 @@ export default function AppRoutes({
       <Route path={ROUTES.CONTACT} element={<Contact />} />
       <Route path={ROUTES.LOGIN} element={<Login onLogin={onLogin} />} />
       <Route path={ROUTES.REGISTER} element={<Register onLogin={onLogin} />} />
-
-      {/* Product Detail Page */}
       <Route
         path={ROUTES.PRODUCT_DETAIL}
         element={<ProductDetail cart={cart} setCart={setCart} />}
@@ -70,6 +70,22 @@ export default function AppRoutes({
               cart={cart}
               setCart={setCart}
             />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={ROUTES.CHECKOUT}
+        element={
+          <ProtectedRoute>
+            <Checkout cart={cart} setCart={setCart} />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={ROUTES.ORDERS}
+        element={
+          <ProtectedRoute>
+            <Orders />
           </ProtectedRoute>
         }
       />

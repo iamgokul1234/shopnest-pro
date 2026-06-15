@@ -9,6 +9,7 @@ import userRoutes from "./user.routes.js";
 import uploadRoutes from "./upload.routes.js";
 import wishlistRoutes from "./wishlist.routes.js";
 import reviewRoutes from "./review.routes.js";
+import orderRoutes from "./order.routes.js";
 
 const router = express.Router();
 
@@ -41,12 +42,14 @@ router.use("/upload", uploadRoutes);
 router.use("/wishlist", wishlistRoutes);
 
 // ─── Review Routes ────────────────────────────────────────────────
-// GET    /api/reviews/:productId
-// POST   /api/reviews/:productId
-// DELETE /api/reviews/:id
 router.use("/reviews", reviewRoutes);
 
-// Future routes
-// router.use("/orders", orderRoutes);
+// ─── Order Routes ─────────────────────────────────────────────────
+// POST   /api/orders
+// GET    /api/orders/my
+// GET    /api/orders/:id
+// GET    /api/orders          (admin only)
+// PUT    /api/orders/:id/status (admin only)
+router.use("/orders", orderRoutes);
 
 export default router;

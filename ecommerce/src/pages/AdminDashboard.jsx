@@ -1,10 +1,10 @@
 /**
  * AdminDashboard.jsx — Admin Control Panel
  *
- * PHASE 6 UPDATE:
- *  - Added image upload to Cloudinary
- *  - Image preview before submitting
- *  - Upload progress indicator
+ * PHASE 10 UPDATE:
+ *  - Added Orders tab
+ *  - Admin can view all orders
+ *  - Admin can update order status
  */
 
 import { useState, useEffect } from "react";
@@ -23,6 +23,10 @@ export default function AdminDashboard() {
   // ─── Users State ──────────────────────────────────────────────
   const [users, setUsers] = useState([]);
   const [userLoading, setUserLoading] = useState(true);
+
+  // ─── Orders State ─────────────────────────────────────────────
+  const [orders, setOrders] = useState([]);
+  const [orderLoading, setOrderLoading] = useState(true);
 
   // ─── Product Form State ───────────────────────────────────────
   const [showForm, setShowForm] = useState(false);
@@ -78,10 +82,29 @@ export default function AdminDashboard() {
     }
   };
 
+  // ─── Fetch Orders ─────────────────────────────────────────────
+  const fetchOrders = async () => {
+    try {
+      setOrderLoading(true);
+      const response = await api.get("/orders");
+      setOrders(response.data.orders);
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Failed to load orders",
+        text: error.response?.data?.message || "Please try again.",
+        confirmButtonColor: "#333",
+      });
+    } finally {
+      setOrderLoading(false);
+    }
+  };
+
   // ─── Load Data On Mount ───────────────────────────────────────
   useEffect(() => {
     fetchProducts();
     fetchUsers();
+    fetchOrders();
   }, []);
 
   // ─── Handle Product Form Change ───────────────────────────────
@@ -95,7 +118,6 @@ export default function AdminDashboard() {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith("image/")) {
       Swal.fire({
         icon: "error",
@@ -106,7 +128,6 @@ export default function AdminDashboard() {
       return;
     }
 
-    // Validate file size (5MB max)
     if (file.size > 1024 * 1024 * 5) {
       Swal.fire({
         icon: "error",
@@ -118,8 +139,6 @@ export default function AdminDashboard() {
     }
 
     setImageFile(file);
-
-    // Create local preview URL
     const previewUrl = URL.createObjectURL(file);
     setImagePreview(previewUrl);
   };
@@ -131,11 +150,9 @@ export default function AdminDashboard() {
     setUploading(true);
 
     try {
-      // Create FormData — required for file uploads
       const formData = new FormData();
       formData.append("image", imageFile);
 
-      // Use axios with multipart/form-data
       const response = await api.post("/upload", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
@@ -185,7 +202,6 @@ export default function AdminDashboard() {
       stock: product.stock,
       rating: product.rating,
     });
-    // Show existing image as preview
     setImagePreview(product.thumbnail);
     setImageFile(null);
     setShowForm(true);
@@ -198,13 +214,11 @@ export default function AdminDashboard() {
 
     let thumbnailUrl = productForm.thumbnail;
 
-    // If a new image was selected, upload it first
     if (imageFile) {
       thumbnailUrl = await uploadImage();
-      if (!thumbnailUrl) return; // Upload failed, stop here
+      if (!thumbnailUrl) return;
     }
 
-    // Make sure we have a thumbnail
     if (!thumbnailUrl) {
       Swal.fire({
         icon: "error",
@@ -216,10 +230,7 @@ export default function AdminDashboard() {
     }
 
     try {
-      const productData = {
-        ...productForm,
-        thumbnail: thumbnailUrl,
-      };
+      const productData = { ...productForm, thumbnail: thumbnailUrl };
 
       if (editingProduct) {
         await api.put(`/products/${editingProduct._id}`, productData);
@@ -349,6 +360,57 @@ export default function AdminDashboard() {
     });
   };
 
+  // ─── Handle Update Order Status ───────────────────────────────
+  const handleUpdateOrderStatus = async (id, currentStatus) => {
+    const { value: selectedStatus } = await Swal.fire({
+      title: "Update Order Status",
+      input: "select",
+      inputOptions: {
+        pending: "Pending",
+        processing: "Processing",
+        shipped: "Shipped",
+        delivered: "Delivered",
+        cancelled: "Cancelled",
+      },
+      inputValue: currentStatus,
+      showCancelButton: true,
+      confirmButtonColor: "#333",
+      confirmButtonText: "Update",
+    });
+
+    if (selectedStatus) {
+      try {
+        await api.put(`/orders/${id}/status`, { status: selectedStatus });
+        Swal.fire({
+          icon: "success",
+          title: "Status Updated",
+          timer: 1200,
+          showConfirmButton: false,
+        });
+        fetchOrders();
+      } catch (error) {
+        Swal.fire({
+          icon: "error",
+          title: "Failed to update status",
+          text: error.response?.data?.message || "Please try again.",
+          confirmButtonColor: "#333",
+        });
+      }
+    }
+  };
+
+  // ─── Status Badge Style ───────────────────────────────────────
+  const getStatusStyle = (status) => {
+    const styles = {
+      pending: { background: "#fff3e0", color: "#e65100" },
+      processing: { background: "#e3f2fd", color: "#1565c0" },
+      shipped: { background: "#f3e5f5", color: "#6a1b9a" },
+      delivered: { background: "#e8f5e9", color: "#2e7d32" },
+      cancelled: { background: "#ffebee", color: "#c62828" },
+    };
+    return styles[status] || {};
+  };
+
   return (
     <div className={styles.dashboard}>
       <h2 className={styles.heading}>Admin Dashboard</h2>
@@ -367,23 +429,24 @@ export default function AdminDashboard() {
         >
           Users ({users.length})
         </button>
+        <button
+          className={`${styles.tab} ${activeTab === "orders" ? styles.activeTab : ""}`}
+          onClick={() => setActiveTab("orders")}
+        >
+          Orders ({orders.length})
+        </button>
       </div>
 
       {/* ── Products Tab ─────────────────────────────────────── */}
       {activeTab === "products" && (
         <div className={styles.tabContent}>
-          {/* Add Product Button */}
           <button
             className={styles.addBtn}
-            onClick={() => {
-              resetForm();
-              setShowForm(!showForm);
-            }}
+            onClick={() => { resetForm(); setShowForm(!showForm); }}
           >
             {showForm ? "Cancel" : "+ Add Product"}
           </button>
 
-          {/* Product Form */}
           {showForm && (
             <form className={styles.productForm} onSubmit={handleProductSubmit}>
               <h3>{editingProduct ? "Edit Product" : "Add New Product"}</h3>
@@ -440,11 +503,8 @@ export default function AdminDashboard() {
                 />
               </div>
 
-              {/* ── Image Upload Section ────────────────────── */}
               <div className={styles.imageUploadSection}>
                 <label className={styles.imageUploadLabel}>Product Image</label>
-
-                {/* Image Preview */}
                 {imagePreview && (
                   <div className={styles.imagePreviewContainer}>
                     <img
@@ -454,8 +514,6 @@ export default function AdminDashboard() {
                     />
                   </div>
                 )}
-
-                {/* File Input */}
                 <input
                   type="file"
                   accept="image/*"
@@ -463,14 +521,9 @@ export default function AdminDashboard() {
                   className={styles.fileInput}
                   id="product-image"
                 />
-                <label
-                  htmlFor="product-image"
-                  className={styles.fileInputLabel}
-                >
+                <label htmlFor="product-image" className={styles.fileInputLabel}>
                   {imageFile ? imageFile.name : "Choose Image"}
                 </label>
-
-                {/* Upload Status */}
                 {uploading && (
                   <p className={styles.uploadingText}>
                     Uploading to Cloudinary...
@@ -497,8 +550,8 @@ export default function AdminDashboard() {
                   {uploading
                     ? "Uploading..."
                     : editingProduct
-                      ? "Update Product"
-                      : "Create Product"}
+                    ? "Update Product"
+                    : "Create Product"}
                 </button>
                 <button
                   type="button"
@@ -511,7 +564,6 @@ export default function AdminDashboard() {
             </form>
           )}
 
-          {/* Products Table */}
           {productLoading ? (
             <p>Loading products...</p>
           ) : products.length === 0 ? (
@@ -616,6 +668,76 @@ export default function AdminDashboard() {
                           onClick={() => handleDeleteUser(user._id, user.name)}
                         >
                           Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Orders Tab ───────────────────────────────────────── */}
+      {activeTab === "orders" && (
+        <div className={styles.tabContent}>
+          {orderLoading ? (
+            <p>Loading orders...</p>
+          ) : orders.length === 0 ? (
+            <p>No orders found.</p>
+          ) : (
+            <div className={styles.tableWrapper}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>Order ID</th>
+                    <th>Customer</th>
+                    <th>Items</th>
+                    <th>Total</th>
+                    <th>Payment</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {orders.map((order) => (
+                    <tr key={order._id}>
+                      <td>#{order._id.slice(-6).toUpperCase()}</td>
+                      <td>
+                        <div>{order.user?.name}</div>
+                        <div style={{ fontSize: "12px", color: "#888" }}>
+                          {order.user?.email}
+                        </div>
+                      </td>
+                      <td>{order.items.length} item(s)</td>
+                      <td>${order.totalPrice.toFixed(2)}</td>
+                      <td>
+                        {order.paymentMethod === "cod"
+                          ? "Cash on Delivery"
+                          : "Razorpay"}
+                      </td>
+                      <td>
+                        <span
+                          className={styles.statusBadge}
+                          style={getStatusStyle(order.status)}
+                        >
+                          {order.status.charAt(0).toUpperCase() +
+                            order.status.slice(1)}
+                        </span>
+                      </td>
+                      <td>
+                        {new Date(order.createdAt).toLocaleDateString()}
+                      </td>
+                      <td>
+                        <button
+                          className={styles.editBtn}
+                          onClick={() =>
+                            handleUpdateOrderStatus(order._id, order.status)
+                          }
+                        >
+                          Update Status
                         </button>
                       </td>
                     </tr>
