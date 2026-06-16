@@ -1,19 +1,28 @@
+// src/controllers/order.controller.js
+// Handles all order operations
+
+import crypto from "crypto";
+import Razorpay from "razorpay";
 import Order from "../models/Order.js";
 import Cart from "../models/Cart.js";
 
+// ─── Initialize Razorpay ──────────────────────────────────────────
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
+});
+
 // ─── @route   POST /api/orders ────────────────────────────────────
-// @desc    Place a new order
+// @desc    Place a new order (COD)
 // @access  Private
 export const placeOrder = async (req, res) => {
   const { shippingAddress, paymentMethod } = req.body;
 
-  // Validate required fields
   if (!shippingAddress || !paymentMethod) {
     res.status(400);
     throw new Error("Please provide shipping address and payment method");
   }
 
-  // Get user's cart
   const cart = await Cart.findOne({ user: req.user._id });
 
   if (!cart || cart.items.length === 0) {
@@ -21,13 +30,11 @@ export const placeOrder = async (req, res) => {
     throw new Error("Your cart is empty");
   }
 
-  // Calculate total price
   const totalPrice = cart.items.reduce(
     (total, item) => total + item.price * item.quantity,
-    0,
+    0
   );
 
-  // Create order from cart items
   const order = await Order.create({
     user: req.user._id,
     items: cart.items,
@@ -37,7 +44,6 @@ export const placeOrder = async (req, res) => {
     status: "pending",
   });
 
-  // Clear cart after order is placed
   cart.items = [];
   await cart.save();
 
@@ -69,7 +75,7 @@ export const getMyOrders = async (req, res) => {
 export const getOrderById = async (req, res) => {
   const order = await Order.findById(req.params.id).populate(
     "user",
-    "name email",
+    "name email"
   );
 
   if (!order) {
@@ -77,7 +83,6 @@ export const getOrderById = async (req, res) => {
     throw new Error("Order not found");
   }
 
-  // Only allow order owner or admin to view
   if (
     order.user._id.toString() !== req.user._id.toString() &&
     req.user.role !== "admin"
@@ -100,7 +105,6 @@ export const getAllOrders = async (req, res) => {
     .populate("user", "name email")
     .sort({ createdAt: -1 });
 
-  // Calculate total revenue
   const totalRevenue = orders
     .filter((o) => o.status !== "cancelled")
     .reduce((sum, o) => sum + o.totalPrice, 0);
@@ -130,7 +134,7 @@ export const updateOrderStatus = async (req, res) => {
   if (!status || !validStatuses.includes(status)) {
     res.status(400);
     throw new Error(
-      "Invalid status. Must be one of: pending, processing, shipped, delivered, cancelled",
+      "Invalid status. Must be one of: pending, processing, shipped, delivered, cancelled"
     );
   }
 
@@ -143,7 +147,6 @@ export const updateOrderStatus = async (req, res) => {
 
   order.status = status;
 
-  // If status is delivered mark as paid for COD
   if (status === "delivered" && order.paymentMethod === "cod") {
     order.isPaid = true;
     order.paidAt = new Date();
@@ -154,6 +157,94 @@ export const updateOrderStatus = async (req, res) => {
   res.status(200).json({
     success: true,
     message: `Order status updated to ${status}`,
+    order,
+  });
+};
+
+// ─── @route   POST /api/orders/create-payment ─────────────────────
+// @desc    Create Razorpay order for payment
+// @access  Private
+export const createPayment = async (req, res) => {
+  const { amount } = req.body;
+
+  if (!amount || amount <= 0) {
+    res.status(400);
+    throw new Error("Invalid amount");
+  }
+
+  // Razorpay amount is in paise (1 INR = 100 paise)
+  const options = {
+    amount: Math.round(amount * 100),
+    currency: "INR",
+    receipt: `receipt_${Date.now()}`,
+  };
+
+  const razorpayOrder = await razorpay.orders.create(options);
+
+  res.status(200).json({
+    success: true,
+    orderId: razorpayOrder.id,
+    amount: razorpayOrder.amount,
+    currency: razorpayOrder.currency,
+    keyId: process.env.RAZORPAY_KEY_ID,
+  });
+};
+
+// ─── @route   POST /api/orders/verify-payment ─────────────────────
+// @desc    Verify Razorpay payment signature and place order
+// @access  Private
+export const verifyPayment = async (req, res) => {
+  const {
+    razorpay_order_id,
+    razorpay_payment_id,
+    razorpay_signature,
+    shippingAddress,
+  } = req.body;
+
+  // Verify payment signature
+  const body = razorpay_order_id + "|" + razorpay_payment_id;
+
+  const expectedSignature = crypto
+    .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+    .update(body.toString())
+    .digest("hex");
+
+  if (expectedSignature !== razorpay_signature) {
+    res.status(400);
+    throw new Error("Payment verification failed. Invalid signature.");
+  }
+
+  // Payment verified — place the order
+  const cart = await Cart.findOne({ user: req.user._id });
+
+  if (!cart || cart.items.length === 0) {
+    res.status(400);
+    throw new Error("Cart is empty");
+  }
+
+  const totalPrice = cart.items.reduce(
+    (total, item) => total + item.price * item.quantity,
+    0
+  );
+
+  const order = await Order.create({
+    user: req.user._id,
+    items: cart.items,
+    shippingAddress,
+    paymentMethod: "razorpay",
+    totalPrice: Math.round(totalPrice * 100) / 100,
+    status: "processing",
+    paymentId: razorpay_payment_id,
+    isPaid: true,
+    paidAt: new Date(),
+  });
+
+  cart.items = [];
+  await cart.save();
+
+  res.status(201).json({
+    success: true,
+    message: "Payment verified and order placed successfully",
     order,
   });
 };

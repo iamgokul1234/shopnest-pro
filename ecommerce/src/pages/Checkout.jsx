@@ -1,21 +1,31 @@
 /**
  * Checkout.jsx — Checkout Page
  *
- * FEATURES:
- *  - Shows order summary from cart
- *  - Collects shipping address
- *  - Payment method selection (COD for now, Razorpay in Phase 11)
- *  - Places order via API
- *  - Clears cart after successful order
+ * PHASE 11 UPDATE:
+ *  - Added Razorpay payment integration
+ *  - COD and Razorpay both supported
+ *  - Payment verification after success
  */
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaShoppingBag, FaMapMarkerAlt } from 'react-icons/fa';
+import { FaShoppingBag, FaMapMarkerAlt, FaCreditCard } from 'react-icons/fa';
 import Swal from 'sweetalert2';
 import api from '../services/api';
 import { ROUTES } from '../constants/routes';
 import styles from './Checkout.module.css';
+
+// ─── Load Razorpay Script ─────────────────────────────────────────
+// Dynamically loads the Razorpay checkout script
+const loadRazorpayScript = () => {
+  return new Promise((resolve) => {
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
 
 export default function Checkout({ cart, setCart }) {
   const navigate = useNavigate();
@@ -45,6 +55,102 @@ export default function Checkout({ cart, setCart }) {
     setForm({ ...form, [name]: value });
   };
 
+  // ─── Handle Razorpay Payment ──────────────────────────────────
+  const handleRazorpayPayment = async () => {
+    // Load Razorpay script
+    const scriptLoaded = await loadRazorpayScript();
+
+    if (!scriptLoaded) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Razorpay Failed',
+        text: 'Failed to load Razorpay. Check your internet connection.',
+        confirmButtonColor: '#333',
+      });
+      return;
+    }
+
+    try {
+      // Create Razorpay order on backend
+      const { data } = await api.post('/orders/create-payment', {
+        amount: totalPrice,
+      });
+
+      // Get current user for prefill
+      const user = JSON.parse(localStorage.getItem('user'));
+
+      // Razorpay payment options
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+        amount: data.amount,
+        currency: data.currency,
+        name: 'ShopNest Pro',
+        description: 'Order Payment',
+        order_id: data.orderId,
+        prefill: {
+          name: form.fullName || user?.name,
+          contact: form.phone,
+        },
+        theme: {
+          color: '#222222',
+        },
+        handler: async (response) => {
+          // Payment successful — verify on backend
+          try {
+            const verifyResponse = await api.post('/orders/verify-payment', {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              shippingAddress: form,
+            });
+
+            // Clear cart
+            setCart([]);
+
+            Swal.fire({
+              icon: 'success',
+              title: 'Payment Successful!',
+              text: `Order #${verifyResponse.data.order._id
+                .slice(-6)
+                .toUpperCase()} placed successfully.`,
+              confirmButtonColor: '#333',
+            }).then(() => {
+              navigate(ROUTES.ORDERS);
+            });
+          } catch (error) {
+            Swal.fire({
+              icon: 'error',
+              title: 'Payment Verification Failed',
+              text: error.response?.data?.message || 'Please contact support.',
+              confirmButtonColor: '#333',
+            });
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            Swal.fire({
+              icon: 'info',
+              title: 'Payment Cancelled',
+              text: 'You cancelled the payment.',
+              confirmButtonColor: '#333',
+            });
+          },
+        },
+      };
+
+      // Open Razorpay payment popup
+      const razorpay = new window.Razorpay(options);
+      razorpay.open();
+    } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Payment Failed',
+        text: error.response?.data?.message || 'Please try again.',
+        confirmButtonColor: '#333',
+      });
+    }
+  };
+
   // ─── Place Order ──────────────────────────────────────────────
   const handlePlaceOrder = async (e) => {
     e.preventDefault();
@@ -59,6 +165,31 @@ export default function Checkout({ cart, setCart }) {
       return;
     }
 
+    // Validate form
+    if (
+      !form.fullName ||
+      !form.phone ||
+      !form.address ||
+      !form.city ||
+      !form.state ||
+      !form.pincode
+    ) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Incomplete Address',
+        text: 'Please fill in all shipping address fields.',
+        confirmButtonColor: '#333',
+      });
+      return;
+    }
+
+    if (paymentMethod === 'razorpay') {
+      // Handle Razorpay payment
+      await handleRazorpayPayment();
+      return;
+    }
+
+    // Handle COD
     setLoading(true);
 
     try {
@@ -67,13 +198,14 @@ export default function Checkout({ cart, setCart }) {
         paymentMethod,
       });
 
-      // Clear cart state after order
       setCart([]);
 
       Swal.fire({
         icon: 'success',
         title: 'Order Placed!',
-        text: `Your order #${response.data.order._id.slice(-6).toUpperCase()} has been placed successfully.`,
+        text: `Your order #${response.data.order._id
+          .slice(-6)
+          .toUpperCase()} has been placed successfully.`,
         confirmButtonColor: '#333',
       }).then(() => {
         navigate(ROUTES.ORDERS);
@@ -201,7 +333,9 @@ export default function Checkout({ cart, setCart }) {
 
             {/* ── Payment Method ──────────────────────────── */}
             <div className={styles.paymentSection}>
-              <h3 className={styles.sectionTitle}>Payment Method</h3>
+              <h3 className={styles.sectionTitle}>
+                <FaCreditCard /> Payment Method
+              </h3>
 
               <div className={styles.paymentOptions}>
                 <label className={styles.paymentOption}>
@@ -215,16 +349,18 @@ export default function Checkout({ cart, setCart }) {
                   <span>Cash on Delivery</span>
                 </label>
 
-                <label
-                  className={`${styles.paymentOption} ${styles.disabledOption}`}
-                >
+                <label className={styles.paymentOption}>
                   <input
                     type="radio"
                     name="paymentMethod"
                     value="razorpay"
-                    disabled
+                    checked={paymentMethod === 'razorpay'}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
                   />
-                  <span>Razorpay (Coming in Phase 11)</span>
+                  <span>
+                    Pay Online with Razorpay
+                    <span className={styles.testBadge}>TEST MODE</span>
+                  </span>
                 </label>
               </div>
             </div>
@@ -234,7 +370,11 @@ export default function Checkout({ cart, setCart }) {
               className={styles.placeOrderBtn}
               disabled={loading}
             >
-              {loading ? 'Placing Order...' : 'Place Order'}
+              {loading
+                ? 'Placing Order...'
+                : paymentMethod === 'razorpay'
+                ? 'Pay Now'
+                : 'Place Order'}
             </button>
           </form>
         </div>
