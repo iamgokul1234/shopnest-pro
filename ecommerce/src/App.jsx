@@ -1,42 +1,54 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { BrowserRouter } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import Navbar from "./components/common/Navbar";
 import AppRoutes from "./routes/AppRoutes";
 import ErrorBoundary from "./components/common/ErrorBoundary";
 import api from "./services/api";
 
+// ─── Redux Actions and Selectors ──────────────────────────────────
+import {
+  loginSuccess,
+  logoutSuccess,
+  selectIsLoggedIn,
+  selectCurrentUser,
+} from "./store/slices/authSlice";
+import { setCart, clearCart, selectCartItems } from "./store/slices/cartSlice";
+import {
+  setWishlist,
+  clearWishlist,
+  selectWishlistItems,
+} from "./store/slices/wishlistSlice";
+
+// ─── Other State ──────────────────────────────────────────────────
+import { useState } from "react";
+
 function App() {
-  // ─── Auth State ──────────────────────────────────────────────────
-  const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem("token"));
-  const [currentUser, setCurrentUser] = useState(
-    JSON.parse(localStorage.getItem("user")) || null,
-  );
+  const dispatch = useDispatch();
+
+  // ─── Read State From Redux Store ────────────────────────────────
+  const isLoggedIn = useSelector(selectIsLoggedIn);
+  const currentUser = useSelector(selectCurrentUser);
+  const cart = useSelector(selectCartItems);
+  const wishlist = useSelector(selectWishlistItems);
+
+  // ─── Search State (stays local — not needed globally) ───────────
+  const [search, setSearch] = useState("");
 
   // ─── Auth Handlers ───────────────────────────────────────────────
   const handleLogin = (token, user) => {
-    localStorage.setItem("token", token);
-    localStorage.setItem("user", JSON.stringify(user));
-    setIsLoggedIn(true);
-    setCurrentUser(user);
+    dispatch(loginSuccess({ token, user }));
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    setIsLoggedIn(false);
-    setCurrentUser(null);
-    setCart([]);
-    setWishlist([]);
+    dispatch(logoutSuccess());
+    dispatch(clearCart());
+    dispatch(clearWishlist());
   };
 
-  // ─── Search State ────────────────────────────────────────────────
-  const [search, setSearch] = useState("");
-
-  // ─── Cart State ──────────────────────────────────────────────────
-  const [cart, setCart] = useState([]);
-
-  // ─── Wishlist State ──────────────────────────────────────────────
-  const [wishlist, setWishlist] = useState([]);
+  // ─── Cart and Wishlist Setters ───────────────────────────────────
+  const setCartItems = (items) => dispatch(setCart(items));
+  const setWishlistItems = (items) => dispatch(setWishlist(items));
 
   // ─── Load Cart And Wishlist From API On Mount ─────────────────────
   useEffect(() => {
@@ -44,14 +56,13 @@ function App() {
       if (!localStorage.getItem("token")) return;
 
       try {
-        // Load cart and wishlist simultaneously
         const [cartResponse, wishlistResponse] = await Promise.all([
           api.get("/cart"),
           api.get("/wishlist"),
         ]);
 
-        setCart(cartResponse.data.items);
-        setWishlist(wishlistResponse.data.items);
+        dispatch(setCart(cartResponse.data.items));
+        dispatch(setWishlist(wishlistResponse.data.items));
       } catch (error) {
         console.error("Failed to load user data:", error.message);
       }
@@ -75,9 +86,9 @@ function App() {
         <AppRoutes
           search={search}
           cart={cart}
-          setCart={setCart}
+          setCart={setCartItems}
           wishlist={wishlist}
-          setWishlist={setWishlist}
+          setWishlist={setWishlistItems}
           onLogin={handleLogin}
         />
       </BrowserRouter>
