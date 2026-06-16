@@ -1,5 +1,7 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
+import sendEmail from "../utils/sendEmail.js";
+import { welcomeEmail } from "../utils/emailTemplates.js";
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -26,7 +28,15 @@ export const register = async (req, res) => {
   // Generate JWT token for the new user
   const token = generateToken(user._id);
 
-  // Send response with user data and token
+  // Send welcome email
+  // We do not await this — email should not block the response
+  const { subject, html } = welcomeEmail(user.name);
+  sendEmail({
+    to: user.email,
+    subject,
+    html,
+  });
+
   res.status(201).json({
     success: true,
     message: "Account created successfully",

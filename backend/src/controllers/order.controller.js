@@ -1,10 +1,13 @@
-// src/controllers/order.controller.js
-// Handles all order operations
-
 import crypto from "crypto";
 import Razorpay from "razorpay";
 import Order from "../models/Order.js";
 import Cart from "../models/Cart.js";
+import User from "../models/User.js";
+import sendEmail from "../utils/sendEmail.js";
+import {
+  orderConfirmationEmail,
+  orderStatusEmail,
+} from "../utils/emailTemplates.js";
 
 // ─── Initialize Razorpay ──────────────────────────────────────────
 const razorpay = new Razorpay({
@@ -32,7 +35,7 @@ export const placeOrder = async (req, res) => {
 
   const totalPrice = cart.items.reduce(
     (total, item) => total + item.price * item.quantity,
-    0
+    0,
   );
 
   const order = await Order.create({
@@ -46,6 +49,13 @@ export const placeOrder = async (req, res) => {
 
   cart.items = [];
   await cart.save();
+
+  // Send order confirmation email
+  const user = await User.findById(req.user._id);
+  if (user) {
+    const { subject, html } = orderConfirmationEmail(user.name, order);
+    sendEmail({ to: user.email, subject, html });
+  }
 
   res.status(201).json({
     success: true,
@@ -75,7 +85,7 @@ export const getMyOrders = async (req, res) => {
 export const getOrderById = async (req, res) => {
   const order = await Order.findById(req.params.id).populate(
     "user",
-    "name email"
+    "name email",
   );
 
   if (!order) {
@@ -134,7 +144,7 @@ export const updateOrderStatus = async (req, res) => {
   if (!status || !validStatuses.includes(status)) {
     res.status(400);
     throw new Error(
-      "Invalid status. Must be one of: pending, processing, shipped, delivered, cancelled"
+      "Invalid status. Must be one of: pending, processing, shipped, delivered, cancelled",
     );
   }
 
@@ -153,6 +163,13 @@ export const updateOrderStatus = async (req, res) => {
   }
 
   await order.save();
+
+  // Send order status update email
+  const user = await User.findById(order.user);
+  if (user) {
+    const { subject, html } = orderStatusEmail(user.name, order);
+    sendEmail({ to: user.email, subject, html });
+  }
 
   res.status(200).json({
     success: true,
@@ -224,7 +241,7 @@ export const verifyPayment = async (req, res) => {
 
   const totalPrice = cart.items.reduce(
     (total, item) => total + item.price * item.quantity,
-    0
+    0,
   );
 
   const order = await Order.create({
@@ -241,6 +258,13 @@ export const verifyPayment = async (req, res) => {
 
   cart.items = [];
   await cart.save();
+
+  // Send order confirmation email for Razorpay orders
+  const userDoc = await User.findById(req.user._id);
+  if (userDoc) {
+    const { subject, html } = orderConfirmationEmail(userDoc.name, order);
+    sendEmail({ to: userDoc.email, subject, html });
+  }
 
   res.status(201).json({
     success: true,
