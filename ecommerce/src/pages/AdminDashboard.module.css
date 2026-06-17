@@ -338,6 +338,82 @@
   white-space: nowrap;
 }
 
+/* ─── Analytics Container ───────────────────────────────────────── */
+.analyticsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ─── Summary Cards ─────────────────────────────────────────────── */
+.summaryCards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.summaryCard {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: transform 0.2s;
+}
+
+.summaryCard:hover {
+  transform: translateY(-2px);
+}
+
+.summaryValue {
+  font-size: 28px;
+  font-weight: 700;
+  color: #222;
+  margin: 0 0 8px;
+}
+
+.summaryLabel {
+  font-size: 13px;
+  color: #888;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ─── Chart Card ────────────────────────────────────────────────── */
+.chartCard {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.chartTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: #222;
+  margin: 0 0 20px;
+}
+
+/* ─── Responsive ────────────────────────────────────────────────── */
+@media screen and (max-width: 768px) {
+  .summaryCards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .summaryCards {
+    grid-template-columns: 1fr;
+  }
+
+  .summaryValue {
+    font-size: 22px;
+  }
+}
+
 /* ─── Responsive ────────────────────────────────────────────────── */
 @media screen and (max-width: 768px) {
   .dashboard {

@@ -1,16 +1,20 @@
-/**
- * AdminDashboard.jsx — Admin Control Panel
- *
- * PHASE 10 UPDATE:
- *  - Added Orders tab
- *  - Admin can view all orders
- *  - Admin can update order status
- */
-
 import { useState, useEffect } from "react";
 import Swal from "sweetalert2";
 import api from "../services/api";
 import styles from "./AdminDashboard.module.css";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+} from "recharts";
 
 export default function AdminDashboard() {
   // ─── Tab State ────────────────────────────────────────────────
@@ -27,6 +31,10 @@ export default function AdminDashboard() {
   // ─── Orders State ─────────────────────────────────────────────
   const [orders, setOrders] = useState([]);
   const [orderLoading, setOrderLoading] = useState(true);
+
+  // ─── Analytics State ──────────────────────────────────────────
+  const [analytics, setAnalytics] = useState(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(true);
 
   // ─── Product Form State ───────────────────────────────────────
   const [showForm, setShowForm] = useState(false);
@@ -100,11 +108,30 @@ export default function AdminDashboard() {
     }
   };
 
+  // ─── Fetch Analytics ──────────────────────────────────────────
+  const fetchAnalytics = async () => {
+    try {
+      setAnalyticsLoading(true);
+      const response = await api.get("/analytics");
+      setAnalytics(response.data.data);
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Failed to load analytics",
+        text: error.response?.data?.message || "Please try again.",
+        confirmButtonColor: "#333",
+      });
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  };
+
   // ─── Load Data On Mount ───────────────────────────────────────
   useEffect(() => {
     fetchProducts();
     fetchUsers();
     fetchOrders();
+    fetchAnalytics();
   }, []);
 
   // ─── Handle Product Form Change ───────────────────────────────
@@ -146,19 +173,13 @@ export default function AdminDashboard() {
   // ─── Upload Image To Cloudinary ───────────────────────────────
   const uploadImage = async () => {
     if (!imageFile) return null;
-
     setUploading(true);
-
     try {
       const formData = new FormData();
       formData.append("image", imageFile);
-
       const response = await api.post("/upload", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+        headers: { "Content-Type": "multipart/form-data" },
       });
-
       return response.data.imageUrl;
     } catch (error) {
       Swal.fire({
@@ -211,14 +232,11 @@ export default function AdminDashboard() {
   // ─── Handle Submit Product Form ───────────────────────────────
   const handleProductSubmit = async (e) => {
     e.preventDefault();
-
     let thumbnailUrl = productForm.thumbnail;
-
     if (imageFile) {
       thumbnailUrl = await uploadImage();
       if (!thumbnailUrl) return;
     }
-
     if (!thumbnailUrl) {
       Swal.fire({
         icon: "error",
@@ -228,10 +246,8 @@ export default function AdminDashboard() {
       });
       return;
     }
-
     try {
       const productData = { ...productForm, thumbnail: thumbnailUrl };
-
       if (editingProduct) {
         await api.put(`/products/${editingProduct._id}`, productData);
         Swal.fire({
@@ -249,7 +265,6 @@ export default function AdminDashboard() {
           showConfirmButton: false,
         });
       }
-
       resetForm();
       fetchProducts();
     } catch (error) {
@@ -330,7 +345,6 @@ export default function AdminDashboard() {
   // ─── Handle Update User Role ──────────────────────────────────
   const handleRoleChange = async (id, currentRole) => {
     const newRole = currentRole === "admin" ? "user" : "admin";
-
     Swal.fire({
       title: `Change role to "${newRole}"?`,
       icon: "question",
@@ -388,6 +402,7 @@ export default function AdminDashboard() {
           showConfirmButton: false,
         });
         fetchOrders();
+        fetchAnalytics();
       } catch (error) {
         Swal.fire({
           icon: "error",
@@ -401,14 +416,14 @@ export default function AdminDashboard() {
 
   // ─── Status Badge Style ───────────────────────────────────────
   const getStatusStyle = (status) => {
-    const styles = {
+    const statusStyles = {
       pending: { background: "#fff3e0", color: "#e65100" },
       processing: { background: "#e3f2fd", color: "#1565c0" },
       shipped: { background: "#f3e5f5", color: "#6a1b9a" },
       delivered: { background: "#e8f5e9", color: "#2e7d32" },
       cancelled: { background: "#ffebee", color: "#c62828" },
     };
-    return styles[status] || {};
+    return statusStyles[status] || {};
   };
 
   return (
@@ -435,6 +450,12 @@ export default function AdminDashboard() {
         >
           Orders ({orders.length})
         </button>
+        <button
+          className={`${styles.tab} ${activeTab === "analytics" ? styles.activeTab : ""}`}
+          onClick={() => setActiveTab("analytics")}
+        >
+          Analytics
+        </button>
       </div>
 
       {/* ── Products Tab ─────────────────────────────────────── */}
@@ -442,7 +463,10 @@ export default function AdminDashboard() {
         <div className={styles.tabContent}>
           <button
             className={styles.addBtn}
-            onClick={() => { resetForm(); setShowForm(!showForm); }}
+            onClick={() => {
+              resetForm();
+              setShowForm(!showForm);
+            }}
           >
             {showForm ? "Cancel" : "+ Add Product"}
           </button>
@@ -450,7 +474,6 @@ export default function AdminDashboard() {
           {showForm && (
             <form className={styles.productForm} onSubmit={handleProductSubmit}>
               <h3>{editingProduct ? "Edit Product" : "Add New Product"}</h3>
-
               <div className={styles.formGrid}>
                 <input
                   type="text"
@@ -521,7 +544,10 @@ export default function AdminDashboard() {
                   className={styles.fileInput}
                   id="product-image"
                 />
-                <label htmlFor="product-image" className={styles.fileInputLabel}>
+                <label
+                  htmlFor="product-image"
+                  className={styles.fileInputLabel}
+                >
                   {imageFile ? imageFile.name : "Choose Image"}
                 </label>
                 {uploading && (
@@ -550,8 +576,8 @@ export default function AdminDashboard() {
                   {uploading
                     ? "Uploading..."
                     : editingProduct
-                    ? "Update Product"
-                    : "Create Product"}
+                      ? "Update Product"
+                      : "Create Product"}
                 </button>
                 <button
                   type="button"
@@ -727,9 +753,7 @@ export default function AdminDashboard() {
                             order.status.slice(1)}
                         </span>
                       </td>
-                      <td>
-                        {new Date(order.createdAt).toLocaleDateString()}
-                      </td>
+                      <td>{new Date(order.createdAt).toLocaleDateString()}</td>
                       <td>
                         <button
                           className={styles.editBtn}
@@ -744,6 +768,167 @@ export default function AdminDashboard() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Analytics Tab ────────────────────────────────────── */}
+      {activeTab === "analytics" && (
+        <div className={styles.tabContent}>
+          {analyticsLoading ? (
+            <p>Loading analytics...</p>
+          ) : !analytics ? (
+            <p>No analytics data available.</p>
+          ) : (
+            <div className={styles.analyticsContainer}>
+              {/* ── Summary Cards ─────────────────────────────── */}
+              <div className={styles.summaryCards}>
+                <div className={styles.summaryCard}>
+                  <h3 className={styles.summaryValue}>
+                    ${analytics.summary.totalRevenue.toFixed(2)}
+                  </h3>
+                  <p className={styles.summaryLabel}>Total Revenue</p>
+                </div>
+                <div className={styles.summaryCard}>
+                  <h3 className={styles.summaryValue}>
+                    {analytics.summary.totalOrders}
+                  </h3>
+                  <p className={styles.summaryLabel}>Total Orders</p>
+                </div>
+                <div className={styles.summaryCard}>
+                  <h3 className={styles.summaryValue}>
+                    {analytics.summary.totalUsers}
+                  </h3>
+                  <p className={styles.summaryLabel}>Total Users</p>
+                </div>
+                <div className={styles.summaryCard}>
+                  <h3 className={styles.summaryValue}>
+                    {analytics.summary.totalProducts}
+                  </h3>
+                  <p className={styles.summaryLabel}>Total Products</p>
+                </div>
+              </div>
+
+              {/* ── Revenue Chart ──────────────────────────────── */}
+              <div className={styles.chartCard}>
+                <h3 className={styles.chartTitle}>Revenue Last 6 Months</h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={analytics.revenueByMonth}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                    <YAxis tick={{ fontSize: 12 }} />
+                    <Tooltip formatter={(value) => [`$${value}`, "Revenue"]} />
+                    <Bar
+                      dataKey="revenue"
+                      fill="#ffce12"
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* ── Orders By Status Chart ─────────────────────── */}
+              <div className={styles.chartCard}>
+                <h3 className={styles.chartTitle}>Orders By Status</h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={analytics.ordersByStatus.filter((s) => s.value > 0)}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={100}
+                      label={({ name, value }) => `${name}: ${value}`}
+                    >
+                      {analytics.ordersByStatus.map((entry, index) => (
+                        <Cell key={index} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* ── Recent Orders ──────────────────────────────── */}
+              <div className={styles.chartCard}>
+                <h3 className={styles.chartTitle}>Recent Orders</h3>
+                <div className={styles.tableWrapper}>
+                  <table className={styles.table}>
+                    <thead>
+                      <tr>
+                        <th>Order ID</th>
+                        <th>Customer</th>
+                        <th>Total</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {analytics.recentOrders.map((order) => (
+                        <tr key={order._id}>
+                          <td>#{order._id.slice(-6).toUpperCase()}</td>
+                          <td>{order.user?.name}</td>
+                          <td>${order.totalPrice.toFixed(2)}</td>
+                          <td>
+                            <span
+                              className={styles.statusBadge}
+                              style={getStatusStyle(order.status)}
+                            >
+                              {order.status.charAt(0).toUpperCase() +
+                                order.status.slice(1)}
+                            </span>
+                          </td>
+                          <td>
+                            {new Date(order.createdAt).toLocaleDateString()}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* ── Recent Users ───────────────────────────────── */}
+              <div className={styles.chartCard}>
+                <h3 className={styles.chartTitle}>Recent Users</h3>
+                <div className={styles.tableWrapper}>
+                  <table className={styles.table}>
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Joined</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {analytics.recentUsers.map((user) => (
+                        <tr key={user._id}>
+                          <td>{user.name}</td>
+                          <td>{user.email}</td>
+                          <td>
+                            <span
+                              className={
+                                user.role === "admin"
+                                  ? styles.adminBadge
+                                  : styles.userBadge
+                              }
+                            >
+                              {user.role}
+                            </span>
+                          </td>
+                          <td>
+                            {new Date(user.createdAt).toLocaleDateString()}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           )}
         </div>

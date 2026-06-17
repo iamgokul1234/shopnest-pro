@@ -10,6 +10,7 @@ import uploadRoutes from "./upload.routes.js";
 import wishlistRoutes from "./wishlist.routes.js";
 import reviewRoutes from "./review.routes.js";
 import orderRoutes from "./order.routes.js";
+import analyticsRoutes from "./analytics.routes.js";
 
 const router = express.Router();
 
@@ -45,11 +46,10 @@ router.use("/wishlist", wishlistRoutes);
 router.use("/reviews", reviewRoutes);
 
 // ─── Order Routes ─────────────────────────────────────────────────
-// POST   /api/orders
-// GET    /api/orders/my
-// GET    /api/orders/:id
-// GET    /api/orders          (admin only)
-// PUT    /api/orders/:id/status (admin only)
 router.use("/orders", orderRoutes);
+
+// ─── Analytics Routes ─────────────────────────────────────────────
+// GET /api/analytics (admin only)
+router.use("/analytics", analyticsRoutes);
 
 export default router;
