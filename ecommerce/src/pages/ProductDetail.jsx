@@ -1,21 +1,11 @@
-/**
- * ProductDetail.jsx — Product Detail Page
- *
- * FEATURES:
- *  - Shows full product details
- *  - Displays all reviews with star ratings
- *  - Allows logged in users to add reviews
- *  - Allows users to delete their own reviews
- *  - Add to cart from detail page
- */
-
-import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { FaStar, FaRegStar, FaTrash, FaShoppingCart } from 'react-icons/fa';
-import Swal from 'sweetalert2';
-import api, { dummyApi } from '../services/api';
-import { ROUTES } from '../constants/routes';
-import styles from './ProductDetail.module.css';
+import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { FaStar, FaRegStar, FaTrash, FaShoppingCart } from "react-icons/fa";
+import Swal from "sweetalert2";
+import api, { dummyApi } from "../services/api";
+import { ROUTES } from "../constants/routes";
+import styles from "./ProductDetail.module.css";
+import Spinner from "../components/common/Spinner";
 
 export default function ProductDetail({ cart, setCart }) {
   const { id } = useParams();
@@ -33,12 +23,12 @@ export default function ProductDetail({ cart, setCart }) {
   // ─── Review Form State ────────────────────────────────────────
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
-  const [comment, setComment] = useState('');
+  const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   // ─── Auth State ───────────────────────────────────────────────
-  const currentUser = JSON.parse(localStorage.getItem('user'));
-  const isLoggedIn = !!localStorage.getItem('token');
+  const currentUser = JSON.parse(localStorage.getItem("user"));
+  const isLoggedIn = !!localStorage.getItem("token");
 
   // ─── Fetch Product ────────────────────────────────────────────
   useEffect(() => {
@@ -49,10 +39,10 @@ export default function ProductDetail({ cart, setCart }) {
         setProduct(response.data);
       } catch (error) {
         Swal.fire({
-          icon: 'error',
-          title: 'Product Not Found',
-          text: 'This product does not exist.',
-          confirmButtonColor: '#333',
+          icon: "error",
+          title: "Product Not Found",
+          text: "This product does not exist.",
+          confirmButtonColor: "#333",
         }).then(() => navigate(ROUTES.HOME));
       } finally {
         setProductLoading(false);
@@ -70,7 +60,7 @@ export default function ProductDetail({ cart, setCart }) {
       setReviews(response.data.reviews);
       setAverageRating(response.data.averageRating);
     } catch (error) {
-      console.error('Failed to load reviews:', error.message);
+      console.error("Failed to load reviews:", error.message);
     } finally {
       setReviewsLoading(false);
     }
@@ -84,16 +74,16 @@ export default function ProductDetail({ cart, setCart }) {
   const handleAddToCart = async () => {
     if (!isLoggedIn) {
       Swal.fire({
-        icon: 'warning',
-        title: 'Login Required',
-        text: 'Please login to add items to your cart.',
-        confirmButtonColor: '#333',
+        icon: "warning",
+        title: "Login Required",
+        text: "Please login to add items to your cart.",
+        confirmButtonColor: "#333",
       });
       return;
     }
 
     try {
-      const response = await api.post('/cart', {
+      const response = await api.post("/cart", {
         productId: product.id,
         title: product.title,
         price: product.price,
@@ -103,16 +93,48 @@ export default function ProductDetail({ cart, setCart }) {
       setCart(response.data.items);
 
       Swal.fire({
-        icon: 'success',
-        title: 'Added to Cart!',
+        icon: "success",
+        title: "Added to Cart!",
         timer: 1500,
         showConfirmButton: false,
       });
     } catch (error) {
       Swal.fire({
-        icon: 'error',
-        title: 'Failed to add item',
-        confirmButtonColor: '#333',
+        icon: "error",
+        title: "Failed to add item",
+        confirmButtonColor: "#333",
+      });
+    }
+  };
+
+  // ─── Buy Now ──────────────────────────────────────────────────
+  const handleBuyNow = async () => {
+    if (!isLoggedIn) {
+      Swal.fire({
+        icon: "warning",
+        title: "Login Required",
+        text: "Please login to continue.",
+        confirmButtonColor: "#333",
+      });
+      return;
+    }
+
+    try {
+      const response = await api.post("/cart", {
+        productId: product.id,
+        title: product.title,
+        price: product.price,
+        thumbnail: product.thumbnail,
+      });
+
+      setCart(response.data.items);
+      navigate(ROUTES.CHECKOUT);
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Failed",
+        text: error.response?.data?.message || "Please try again.",
+        confirmButtonColor: "#333",
       });
     }
   };
@@ -123,10 +145,10 @@ export default function ProductDetail({ cart, setCart }) {
 
     if (rating === 0) {
       Swal.fire({
-        icon: 'warning',
-        title: 'Rating Required',
-        text: 'Please select a star rating.',
-        confirmButtonColor: '#333',
+        icon: "warning",
+        title: "Rating Required",
+        text: "Please select a star rating.",
+        confirmButtonColor: "#333",
       });
       return;
     }
@@ -141,24 +163,24 @@ export default function ProductDetail({ cart, setCart }) {
       });
 
       Swal.fire({
-        icon: 'success',
-        title: 'Review Added!',
+        icon: "success",
+        title: "Review Added!",
         timer: 1500,
         showConfirmButton: false,
       });
 
       // Reset form
       setRating(0);
-      setComment('');
+      setComment("");
 
       // Reload reviews
       fetchReviews();
     } catch (error) {
       Swal.fire({
-        icon: 'error',
-        title: 'Failed to add review',
-        text: error.response?.data?.message || 'Please try again.',
-        confirmButtonColor: '#333',
+        icon: "error",
+        title: "Failed to add review",
+        text: error.response?.data?.message || "Please try again.",
+        confirmButtonColor: "#333",
       });
     } finally {
       setSubmitting(false);
@@ -168,29 +190,29 @@ export default function ProductDetail({ cart, setCart }) {
   // ─── Delete Review ────────────────────────────────────────────
   const handleDeleteReview = async (reviewId) => {
     Swal.fire({
-      title: 'Delete Review?',
-      text: 'This cannot be undone.',
-      icon: 'warning',
+      title: "Delete Review?",
+      text: "This cannot be undone.",
+      icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#333',
-      confirmButtonText: 'Yes, delete',
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#333",
+      confirmButtonText: "Yes, delete",
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
           await api.delete(`/reviews/${reviewId}`);
           Swal.fire({
-            icon: 'success',
-            title: 'Review Deleted',
+            icon: "success",
+            title: "Review Deleted",
             timer: 1200,
             showConfirmButton: false,
           });
           fetchReviews();
         } catch (error) {
           Swal.fire({
-            icon: 'error',
-            title: 'Failed to delete review',
-            confirmButtonColor: '#333',
+            icon: "error",
+            title: "Failed to delete review",
+            confirmButtonColor: "#333",
           });
         }
       }
@@ -202,9 +224,9 @@ export default function ProductDetail({ cart, setCart }) {
     return [1, 2, 3, 4, 5].map((star) => (
       <span key={star}>
         {star <= value ? (
-          <FaStar style={{ color: '#f5a623' }} />
+          <FaStar style={{ color: "#f5a623" }} />
         ) : (
-          <FaRegStar style={{ color: '#f5a623' }} />
+          <FaRegStar style={{ color: "#f5a623" }} />
         )}
       </span>
     ));
@@ -221,9 +243,9 @@ export default function ProductDetail({ cart, setCart }) {
         onMouseLeave={() => setHoverRating(0)}
       >
         {star <= (hoverRating || rating) ? (
-          <FaStar style={{ color: '#f5a623', fontSize: '24px' }} />
+          <FaStar style={{ color: "#f5a623", fontSize: "24px" }} />
         ) : (
-          <FaRegStar style={{ color: '#f5a623', fontSize: '24px' }} />
+          <FaRegStar style={{ color: "#f5a623", fontSize: "24px" }} />
         )}
       </span>
     ));
@@ -231,18 +253,13 @@ export default function ProductDetail({ cart, setCart }) {
 
   // ─── Loading State ────────────────────────────────────────────
   if (productLoading) {
-    return (
-      <div style={{ textAlign: 'center', marginTop: '100px', fontSize: '20px' }}>
-        Loading product...
-      </div>
-    );
+    return <Spinner message="Loading product..." />;
   }
 
   if (!product) return null;
 
   return (
     <div className={styles.container}>
-
       {/* ── Product Details Section ───────────────────────── */}
       <div className={styles.productSection}>
         {/* Product Image */}
@@ -270,18 +287,18 @@ export default function ProductDetail({ cart, setCart }) {
           <p className={styles.price}>${product.price}</p>
           <p className={styles.description}>{product.description}</p>
           <p className={styles.stock}>
-            {product.stock > 0
-              ? `${product.stock} in stock`
-              : 'Out of stock'}
+            {product.stock > 0 ? `${product.stock} in stock` : "Out of stock"}
           </p>
 
           {/* Add To Cart Button */}
-          <button
-            className={styles.addToCartBtn}
-            onClick={handleAddToCart}
-          >
-            <FaShoppingCart /> Add to Cart
-          </button>
+          <div className={styles.productButtons}>
+            <button className={styles.addToCartBtn} onClick={handleAddToCart}>
+              <FaShoppingCart /> Add to Cart
+            </button>
+            <button className={styles.buyNowBtn} onClick={handleBuyNow}>
+              Buy Now
+            </button>
+          </div>
         </div>
       </div>
 
@@ -290,24 +307,17 @@ export default function ProductDetail({ cart, setCart }) {
         <h2 className={styles.reviewsHeading}>
           Customer Reviews
           {reviews.length > 0 && (
-            <span className={styles.reviewCount}>
-              ({reviews.length})
-            </span>
+            <span className={styles.reviewCount}>({reviews.length})</span>
           )}
         </h2>
 
         {/* Add Review Form — only for logged in users */}
         {isLoggedIn ? (
-          <form
-            className={styles.reviewForm}
-            onSubmit={handleSubmitReview}
-          >
+          <form className={styles.reviewForm} onSubmit={handleSubmitReview}>
             <h3>Write a Review</h3>
 
             {/* Star Rating Input */}
-            <div className={styles.starsInput}>
-              {renderInteractiveStars()}
-            </div>
+            <div className={styles.starsInput}>{renderInteractiveStars()}</div>
 
             {/* Comment Input */}
             <textarea
@@ -322,28 +332,26 @@ export default function ProductDetail({ cart, setCart }) {
             />
 
             <div className={styles.formFooter}>
-              <span className={styles.charCount}>
-                {comment.length}/500
-              </span>
+              <span className={styles.charCount}>{comment.length}/500</span>
               <button
                 type="submit"
                 className={styles.submitReviewBtn}
                 disabled={submitting}
               >
-                {submitting ? 'Submitting...' : 'Submit Review'}
+                {submitting ? "Submitting..." : "Submit Review"}
               </button>
             </div>
           </form>
         ) : (
           <div className={styles.loginPrompt}>
             <p>
-              Please{' '}
+              Please{" "}
               <span
                 className={styles.loginLink}
                 onClick={() => navigate(ROUTES.LOGIN)}
               >
                 login
-              </span>{' '}
+              </span>{" "}
               to write a review.
             </p>
           </div>
@@ -377,7 +385,7 @@ export default function ProductDetail({ cart, setCart }) {
                     {/* Delete button — only for review owner or admin */}
                     {currentUser &&
                       (currentUser.id === review.user ||
-                        currentUser.role === 'admin') && (
+                        currentUser.role === "admin") && (
                         <button
                           className={styles.deleteReviewBtn}
                           onClick={() => handleDeleteReview(review._id)}

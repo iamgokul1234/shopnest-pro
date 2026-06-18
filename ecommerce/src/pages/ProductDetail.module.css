@@ -337,3 +337,28 @@
     font-size: 22px;
   }
 }
+
+/* ─── Product Buttons ───────────────────────────────────────────── */
+.productButtons {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+/* ─── Buy Now Button ────────────────────────────────────────────── */
+.buyNowBtn {
+  background: #ff6b35;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 28px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.buyNowBtn:hover {
+  background: #e55a25;
+}

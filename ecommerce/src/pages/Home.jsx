@@ -1,12 +1,3 @@
-/**
- * Home.jsx — Product Listing Page
- *
- * PHASE 9 UPDATE:
- *  - Added advanced filtering (category, price, rating)
- *  - Added sorting (price, rating, name)
- *  - FilterSidebar component integrated
- */
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
@@ -14,6 +5,7 @@ import ProductCard from "../components/product/ProductCard";
 import FilterSidebar from "../components/common/FilterSidebar";
 import api, { dummyApi } from "../services/api";
 import styles from "./Home.module.css";
+import Spinner from "../components/common/Spinner";
 
 // ─── Default Filter State ─────────────────────────────────────────
 const DEFAULT_FILTERS = {
@@ -132,7 +124,7 @@ export default function Home({
     }
 
     const isWishlisted = wishlist.find(
-      (w) => w.productId === item.id.toString()
+      (w) => w.productId === item.id.toString(),
     );
 
     try {
@@ -178,20 +170,20 @@ export default function Home({
     // Search filter
     if (search) {
       filtered = filtered.filter((p) =>
-        p.title.toLowerCase().includes(search.toLowerCase())
+        p.title.toLowerCase().includes(search.toLowerCase()),
       );
     }
 
     // Category filter
     if (filters.category !== "all") {
       filtered = filtered.filter(
-        (p) => p.category.toLowerCase() === filters.category.toLowerCase()
+        (p) => p.category.toLowerCase() === filters.category.toLowerCase(),
       );
     }
 
     // Price range filter
     filtered = filtered.filter(
-      (p) => p.price >= filters.minPrice && p.price <= filters.maxPrice
+      (p) => p.price >= filters.minPrice && p.price <= filters.maxPrice,
     );
 
     // Rating filter
@@ -227,16 +219,19 @@ export default function Home({
 
   // ─── Render States ───────────────────────────────────────────────
   if (loading) {
-    return (
-      <div style={{ textAlign: "center", marginTop: "100px", fontSize: "20px" }}>
-        Loading products...
-      </div>
-    );
+    return <Spinner message="Loading products..." />;
   }
 
   if (error) {
     return (
-      <div style={{ textAlign: "center", marginTop: "100px", color: "red", fontSize: "20px" }}>
+      <div
+        style={{
+          textAlign: "center",
+          marginTop: "100px",
+          color: "red",
+          fontSize: "20px",
+        }}
+      >
         {error}
       </div>
     );
@@ -257,7 +252,7 @@ export default function Home({
             className={styles.filterToggleBtn}
             onClick={() => setShowFilters(!showFilters)}
           >
-            {showFilters ? 'Hide Filters' : 'Show Filters'}
+            {showFilters ? "Hide Filters" : "Show Filters"}
           </button>
         </div>
       </div>
@@ -265,7 +260,9 @@ export default function Home({
       {/* ── Main Layout ──────────────────────────────────────── */}
       <div className={styles.mainLayout}>
         {/* Filter Sidebar */}
-        <div className={`${styles.sidebarWrapper} ${showFilters ? styles.showSidebar : ''}`}>
+        <div
+          className={`${styles.sidebarWrapper} ${showFilters ? styles.showSidebar : ""}`}
+        >
           <FilterSidebar
             filters={filters}
             onFilterChange={handleFilterChange}
@@ -295,7 +292,7 @@ export default function Home({
                   onWishlist={() => handleWishlist(product)}
                   isWishlisted={
                     !!wishlist.find(
-                      (w) => w.productId === product.id.toString()
+                      (w) => w.productId === product.id.toString(),
                     )
                   }
                   onCardClick={() => navigate(`/products/${product.id}`)}
