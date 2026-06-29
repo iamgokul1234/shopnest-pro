@@ -1,35 +1,27 @@
-import nodemailer from "nodemailer";
+// src/utils/sendEmail.js
+// Email utility using SendGrid API
+// SendGrid uses HTTPS instead of SMTP
+// This works on Render free tier which blocks SMTP ports
 
-// ─── Create Transporter ───────────────────────────────────────────
-// Using port 587 with TLS instead of 465 (SSL)
-// Port 587 is allowed on Render free tier
-// Port 465 is blocked by Render network restrictions
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false, // false for port 587 (TLS), true for port 465 (SSL)
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+import sgMail from "@sendgrid/mail";
+
+// ─── Configure SendGrid ───────────────────────────────────────────
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 // ─── Send Email Function ──────────────────────────────────────────
 const sendEmail = async ({ to, subject, html }) => {
   try {
-    const mailOptions = {
-      from: process.env.EMAIL_FROM,
+    const msg = {
       to,
+      from: process.env.SENDGRID_FROM,
       subject,
       html,
     };
 
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`✅ Email sent to ${to}: ${info.messageId}`);
+    await sgMail.send(msg);
+    console.log(`✅ Email sent to ${to}`);
     return true;
   } catch (error) {
-    // Log error but do not crash the app
-    // Email failure should never block the main operation
     console.error(`❌ Email failed to ${to}: ${error.message}`);
     return false;
   }
